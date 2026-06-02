@@ -1,10 +1,14 @@
 ---
+
 title: Sample note
 tags:
-  - markdown
-  - wysiwyg
-  - toto;
+
+* markdown
+* wysiwyg
+* toto;
+
 ---
+
 # Editable Markdown
 
 This file exercises **Markdown**, _inline emphasis_, ~~strikethrough~~, `inline code`, [inline links](https://code.visualstudio.com/ "https://code.visualstudio.com/"), and GitHub-flavored Markdown.
@@ -19,51 +23,51 @@ This file exercises **Markdown**, _inline emphasis_, ~~strikethrough~~, `inline 
 
 Use a normal paragraph for prose.
 
-End a line with two spaces for a hard break.  
+End a line with two spaces for a hard break.\
 This line should appear directly below the previous one.
 
 ## Blockquotes
 
 > Frontmatter should be preserved when edits are saved.
-> 
+>
 > Nested quote:
-> 
+>
 > > This is a nested blockquote.
 
 ## Lists
 
--   Unordered item
--   Another item
-    -   Nested item
-    -   Nested item with **bold**
+* Unordered item
+* Another item
+  * Nested item
+  * Nested item with **bold**
 
-1.  Ordered item
-2.  Ordered item
-3.  Ordered item with `code`
+1. Ordered item
+2. Ordered item
+3. Ordered item with `code`
 
 ## GitHub Task Lists
 
--   Render checked tasks
--   Render unchecked tasks
--   Preserve task list markdown when possible
+* Render checked tasks
+* Render unchecked tasks
+* Preserve task list markdown when possible
 
 ## Table
 
-| Syntax |  | Column | Example | Notes |
-| --- | --- | --- | --- | --- |
-| Bold |  |  |  |  |
-| `**text**` | Strong emphasis |  |  |  |
-|  |  |  |  |  |
-|  |  |  |  |  |
-|  |  |  |  |  |
-|  |  |  |  |  |
-|  |  |  |  |  |
-|  |  |  |  |  |
-|  |  |  |  |  |
-|  |  |  |  |  |
-| [label](https://example.com "https://example.com/") | Inline link |  |  |  |
-| Code |  |  |  |  |
-| `` `value` `` | Inline code |  |  |  |
+| Syntax                                              |                 | Column | Example | Notes |
+| --------------------------------------------------- | --------------- | ------ | ------- | ----- |
+| Bold                                                |                 |        |         |       |
+| **text**                                            | Strong emphasis |        |         |       |
+|                                                     |                 |        |         |       |
+|                                                     |                 |        |         |       |
+|                                                     |                 |        |         |       |
+|                                                     |                 |        |         |       |
+|                                                     |                 |        |         |       |
+|                                                     |                 |        |         |       |
+|                                                     |                 |        |         |       |
+|                                                     |                 |        |         |       |
+| [label](https://example.com "https://example.com/") | Inline link     |        |         |       |
+| Code                                                |                 |        |         |       |
+| `` `value` ``                                       | Inline code     |        |         |       |
 
 Use the rich editor table controls to insert rows and columns while the cursor is inside a table cell.
 
@@ -90,7 +94,7 @@ $$
 
 ## Code Fences
 
-```ts
+```TypeScript
 type Result = {
   ok: boolean;
   value: number;
@@ -99,7 +103,7 @@ type Result = {
 const result: Result = { ok: true, value: 42 };
 ```
 
-```bash
+```Shell
 printf 'hello markdown\n'
 ```
 
@@ -111,7 +115,7 @@ This sentence uses a collapsed [reference](https://github.github.com/gfm/ "https
 
 ## Images
 
-![VS Code logo](https://code.visualstudio.com/assets/images/code-stable.png)
+![1.00](https://code.visualstudio.com/assets/images/code-stable.png)
 
 ## Autolinks
 
@@ -121,5 +125,6 @@ This sentence uses a collapsed [reference](https://github.github.com/gfm/ "https
 
 Markdown source can contain inline HTML in many renderers, but this editor sanitizes raw HTML by default for safety.
 
-- [ ] Test
-- [x] Unchecked
+* [ ] Test
+* [x] Unchecked
+

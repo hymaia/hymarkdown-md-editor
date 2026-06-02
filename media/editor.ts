@@ -247,6 +247,12 @@ toolbar.addEventListener("click", event => {
     return;
   }
 
+  if (action === "open-settings") {
+    emitChangeNow();
+    vscode.postMessage({ type: "openSettings" });
+    return;
+  }
+
   editor.focus();
 
   if (command) {
@@ -290,6 +296,11 @@ document.addEventListener("click", event => {
 document.addEventListener("selectionchange", rememberSelectedTableCell);
 editor.addEventListener("input", emitChangeSoon);
 editor.addEventListener("focusin", event => {
+  const cell = getTableCellFromTarget(event.target);
+  // Focusing a different (non-editing) cell exits any open editor.
+  if (isBodyTableCell(cell) && !isCellEditing(cell)) {
+    clearCellEditing(cell);
+  }
   rememberTableCellFromTarget(event.target);
 });
 editor.addEventListener("focusout", () => {
@@ -305,6 +316,8 @@ editor.addEventListener("focusout", () => {
     clearActiveTableHighlights();
   }, 0);
 });
+const ARROW_KEYS = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+
 editor.addEventListener("keydown", event => {
   const cell = getTableCellFromTarget(event.target) ?? activeTableCell;
   if (!cell) {
@@ -316,17 +329,58 @@ editor.addEventListener("keydown", event => {
     return;
   }
 
-  if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+  const frontmatter = isFrontmatterCell(cell);
+
+  // Body cells in edit mode behave like a normal text field: typing, caret
+  // movement and selection all work. Escape returns to the selected state.
+  if (!frontmatter && isCellEditing(cell)) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      selectCell(cell);
+    }
     return;
   }
 
-  const target = getKeyboardNavigationCell(cell, event.key);
-  if (!target) {
+  // Selected state (and frontmatter cells): arrows move between cells.
+  if (ARROW_KEYS.includes(event.key)) {
+    const target = getKeyboardNavigationCell(cell, event.key);
+    if (!target) {
+      return;
+    }
+
+    event.preventDefault();
+    focusCell(target);
     return;
   }
 
-  event.preventDefault();
-  focusCell(target);
+  if (frontmatter) {
+    return;
+  }
+
+  // Selected body cell: transition into editing.
+  if (event.key === "Enter") {
+    event.preventDefault();
+    enterCellEditing(cell, "end");
+    return;
+  }
+
+  if (event.key === "Backspace" || event.key === "Delete") {
+    event.preventDefault();
+    enterCellEditing(cell, "replace", "");
+    return;
+  }
+
+  if (isPrintableKey(event)) {
+    event.preventDefault();
+    enterCellEditing(cell, "replace", event.key);
+  }
+});
+editor.addEventListener("dblclick", event => {
+  const cell = getTableCellFromTarget(event.target);
+  if (isBodyTableCell(cell) && !isCellEditing(cell)) {
+    activeTableCell = cell;
+    enterCellEditing(cell, "end");
+  }
 });
 editor.addEventListener("click", event => {
   rememberTableCellFromTarget(event.target);
@@ -549,6 +603,7 @@ function prepareRichContent(): void {
     math.contentEditable = "false";
   }
 
+  markTableCells();
   renderMermaidBlocks();
   updateActiveTableHighlights();
 }
@@ -653,6 +708,7 @@ function insertTable(): void {
     false,
     `<table><thead><tr><th>Column 1</th><th>Column 2</th><th>Column 3</th></tr></thead><tbody><tr><td><br></td><td><br></td><td><br></td></tr><tr><td><br></td><td><br></td><td><br></td></tr></tbody></table><p><br></p>`
   );
+  markTableCells();
   rememberSelectedTableCell();
   updateActiveTableHighlights();
 }
@@ -715,11 +771,14 @@ function getTabbableCells(cell: HTMLTableCellElement): HTMLTableCellElement[] {
     return [cell];
   }
 
-  // Document-order cells; in the frontmatter panel (contenteditable=false)
-  // only the editable value <td> qualifies, so Tab walks value cells only.
+  // Document-order cells. Body cells are selectable (contenteditable=false) yet
+  // still tabbable; in the frontmatter panel only the editable value <td>
+  // qualifies, so Tab walks value cells only there.
   return Array.from(table.rows)
     .flatMap(row => Array.from(row.cells) as HTMLTableCellElement[])
-    .filter(candidate => candidate.isContentEditable);
+    .filter(candidate =>
+      isFrontmatterCell(candidate) ? candidate.isContentEditable : true
+    );
 }
 
 function handleTableTab(event: KeyboardEvent, cell: HTMLTableCellElement): void {
@@ -801,6 +860,8 @@ function insertColumnAfter(cell: HTMLTableCellElement): void {
     const reference = row.cells[index];
     const newCell = document.createElement(reference?.tagName.toLowerCase() === "th" ? "th" : "td");
     newCell.innerHTML = reference?.tagName.toLowerCase() === "th" ? "Column" : "<br>";
+    newCell.contentEditable = "false";
+    newCell.tabIndex = -1;
     reference?.after(newCell);
   }
   const nextCell = cell.parentElement?.children[index + 1] as HTMLTableCellElement | undefined;
@@ -847,14 +908,99 @@ function focusCell(cell?: HTMLTableCellElement): void {
   }
 
   activeTableCell = cell;
-  cell.focus();
+  // Frontmatter value cells are always in edit mode; body table cells default
+  // to the "selected" state (spreadsheet-style) until the user opts into editing.
+  if (isFrontmatterCell(cell)) {
+    cell.focus();
+    placeCaretAtEnd(cell);
+  } else {
+    selectCell(cell);
+  }
+  updateActiveTableHighlights();
+}
+
+function placeCaretAtEnd(cell: HTMLTableCellElement): void {
   const range = document.createRange();
   range.selectNodeContents(cell);
   range.collapse(false);
   const selection = window.getSelection();
   selection?.removeAllRanges();
   selection?.addRange(range);
+}
+
+// Mark every body-table cell as a non-editable, focusable grid cell so that
+// clicking or navigating to it "selects" it rather than dropping a caret in.
+function markTableCells(): void {
+  for (const cell of Array.from(
+    editor.querySelectorAll<HTMLTableCellElement>("table td, table th")
+  )) {
+    if (isFrontmatterCell(cell)) {
+      continue;
+    }
+    cell.contentEditable = "false";
+    cell.tabIndex = -1;
+  }
+}
+
+function isBodyTableCell(cell: HTMLTableCellElement | null): cell is HTMLTableCellElement {
+  return Boolean(cell && cell.closest("table") && !isFrontmatterCell(cell));
+}
+
+function isCellEditing(cell: HTMLTableCellElement): boolean {
+  return cell.classList.contains("table-cell-editing");
+}
+
+// Revert any body cell left in edit mode back to the selected state.
+function clearCellEditing(except?: HTMLTableCellElement): void {
+  for (const cell of Array.from(
+    editor.querySelectorAll<HTMLTableCellElement>(".table-cell-editing")
+  )) {
+    if (cell === except) {
+      continue;
+    }
+    cell.classList.remove("table-cell-editing");
+    cell.contentEditable = "false";
+    cell.tabIndex = -1;
+  }
+}
+
+// "Selected" state: cell is focused and highlighted but not editable.
+function selectCell(cell: HTMLTableCellElement): void {
+  clearCellEditing(cell);
+  cell.classList.remove("table-cell-editing");
+  cell.contentEditable = "false";
+  cell.tabIndex = -1;
+  cell.focus();
+  window.getSelection()?.removeAllRanges();
+}
+
+// "Editing" state: make the cell editable and place the caret.
+// mode "end" keeps content and puts the caret at the end; mode "replace" wipes
+// the content first (used when the user starts typing over a selected cell).
+function enterCellEditing(
+  cell: HTMLTableCellElement,
+  mode: "end" | "replace",
+  char?: string
+): void {
+  clearCellEditing(cell);
+  cell.contentEditable = "true";
+  cell.classList.add("table-cell-editing");
+  cell.focus();
+
+  if (mode === "replace") {
+    cell.textContent = char ?? "";
+    placeCaretAtEnd(cell);
+    emitChangeSoon();
+  } else {
+    placeCaretAtEnd(cell);
+  }
   updateActiveTableHighlights();
+}
+
+// Printable key = a single-character key with no command modifier. Excludes
+// Enter/Tab/Arrow*/Page*/Home/End (multi-char key names) and shortcuts.
+function isPrintableKey(event: KeyboardEvent): boolean {
+  return event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey;
 }
 
 function closeToolbarMenus(): void {

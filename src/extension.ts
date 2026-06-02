@@ -95,6 +95,14 @@ class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
         return;
       }
 
+      if (message?.type === "openSettings") {
+        await vscode.commands.executeCommand(
+          "workbench.action.openSettings",
+          "@ext:local.markdown-wysiwyg-editor markdownWysiwyg"
+        );
+        return;
+      }
+
       if (message?.type !== "updateMarkdown" || typeof message.markdown !== "string") {
         return;
       }
@@ -185,9 +193,21 @@ class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
       <button type="button" data-action="code" title="Inline code" aria-label="Inline code">&lt;/&gt;</button>
       <span class="divider"></span>
       <details class="toolbar-menu">
-        <summary title="Table tools" aria-label="Table tools">▦</summary>
+        <summary title="Table tools" aria-label="Table tools">
+          <svg class="table-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <rect x="4" y="4" width="16" height="16" rx="1.5"></rect>
+            <line x1="12" y1="4" x2="12" y2="20"></line>
+            <line x1="4" y1="12" x2="20" y2="12"></line>
+          </svg>
+        </summary>
         <div class="toolbar-menu-popover" role="menu" aria-label="Table tools">
-          <button type="button" data-action="table" title="Insert table" aria-label="Insert table">▦</button>
+          <button type="button" data-action="table" title="Insert table" aria-label="Insert table">
+            <svg class="table-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <rect x="4" y="4" width="16" height="16" rx="1.5"></rect>
+              <line x1="12" y1="4" x2="12" y2="20"></line>
+              <line x1="4" y1="12" x2="20" y2="12"></line>
+            </svg>
+          </button>
           <button type="button" data-action="row-after" title="Add row" aria-label="Add row">
             <svg class="table-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
               <rect x="3" y="4" width="18" height="6" rx="1"></rect>
@@ -219,6 +239,12 @@ class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
       <span class="divider"></span>
       <button type="button" data-action="open-source" title="Open in VS Code editor" aria-label="Open in VS Code editor">Code</button>
       <span class="status" id="status" aria-live="polite"></span>
+      <button type="button" data-action="open-settings" title="Open settings" aria-label="Open settings">
+        <svg class="toolbar-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"></path>
+          <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2.1 2.1 0 0 1-2.97 2.97l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.09 1.65V21a2.1 2.1 0 0 1-4.2 0v-.06a1.8 1.8 0 0 0-1.18-1.65 1.8 1.8 0 0 0-1.98.36l-.04.04a2.1 2.1 0 0 1-2.97-2.97l.04-.04A1.8 1.8 0 0 0 3.75 15a1.8 1.8 0 0 0-1.65-1.09H2a2.1 2.1 0 0 1 0-4.2h.06A1.8 1.8 0 0 0 3.7 8.53a1.8 1.8 0 0 0-.36-1.98l-.04-.04a2.1 2.1 0 0 1 2.97-2.97l.04.04a1.8 1.8 0 0 0 1.98.36H8.3A1.8 1.8 0 0 0 9.39 2.3V2a2.1 2.1 0 0 1 4.2 0v.06a1.8 1.8 0 0 0 1.09 1.65 1.8 1.8 0 0 0 1.98-.36l.04-.04a2.1 2.1 0 0 1 2.97 2.97l-.04.04a1.8 1.8 0 0 0-.36 1.98v.01a1.8 1.8 0 0 0 1.65 1.09H21a2.1 2.1 0 0 1 0 4.2h-.06A1.8 1.8 0 0 0 19.4 15Z"></path>
+        </svg>
+      </button>
     </div>
     <main id="editor" class="editor" contenteditable="true" spellcheck="true" aria-label="Markdown document"></main>
   </div>
