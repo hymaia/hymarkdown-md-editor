@@ -1,0 +1,1 @@
+After each major code increment, run ./scripts/dev-reinstall.sh.

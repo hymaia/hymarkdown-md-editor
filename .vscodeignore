@@ -1,0 +1,9 @@
+src/**
+media/editor.ts
+node_modules/**
+**/*.map
+.vscode/**
+sample/**
+tsconfig.json
+esbuild.js
+package-lock.json

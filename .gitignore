@@ -1,0 +1,4 @@
+node_modules/
+dist/
+markdown-wysiwyg-editor-0.0.1.vsix
+.DS_Store

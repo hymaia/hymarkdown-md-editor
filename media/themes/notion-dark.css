@@ -1,0 +1,44 @@
+/*
+ * Example theme: Notion-style dark.
+ *
+ * A theme only needs to override the --mw-* design tokens declared in
+ * media/editor.css. Point the "markdownWysiwyg.themePath" setting at a copy of
+ * this file (or your own) to re-skin the editor — no structural CSS required.
+ */
+
+:root {
+  color-scheme: dark;
+
+  --mw-bg: rgb(25, 25, 25);
+  --mw-surface: rgb(37, 37, 37);
+  --mw-surface-hover: rgba(255, 255, 255, 0.055);
+  --mw-popover-bg: rgb(37, 37, 37);
+
+  --mw-fg: rgba(255, 255, 255, 0.9);
+  --mw-fg-muted: rgba(255, 255, 255, 0.46);
+  --mw-fg-faint: rgba(255, 255, 255, 0.34);
+  --mw-placeholder: rgba(255, 255, 255, 0.28);
+
+  --mw-border: rgba(255, 255, 255, 0.094);
+  --mw-border-strong: rgba(255, 255, 255, 0.16);
+
+  --mw-accent: rgb(35, 131, 226);
+  --mw-accent-fg: #ffffff;
+  --mw-focus: rgb(45, 143, 240);
+  --mw-selection: rgba(35, 131, 226, 0.32);
+
+  --mw-code-bg: rgba(255, 255, 255, 0.08);
+  --mw-code-fg: rgb(255, 168, 122);
+  --mw-code-block-bg: rgb(31, 31, 31);
+
+  --mw-quote-border: rgba(255, 255, 255, 0.24);
+  --mw-link: rgb(95, 168, 244);
+  --mw-link-hover: rgb(135, 190, 248);
+
+  --mw-table-header-bg: rgb(32, 32, 32);
+  --mw-table-stripe: rgba(255, 255, 255, 0.022);
+  --mw-table-highlight: rgba(35, 131, 226, 0.22);
+
+  --mw-shadow-popover: 0 12px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+}
