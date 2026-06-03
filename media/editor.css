@@ -1,110 +1,48 @@
-/*
- * Structural styles. All colors, fonts and metrics are driven by --mw-* design
- * tokens defined below. To re-theme the editor, override these tokens from a
- * separate CSS file (see media/themes/*.css and the markdownWysiwyg.themePath
- * setting) — you should not need to touch the rules in this file.
- */
-
 :root {
   color-scheme: light dark;
-
-  /* Typography */
   --mw-font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji";
+    Helvetica, Arial, sans-serif;
   --mw-mono-font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
     "Liberation Mono", monospace;
-  --mw-font-size: 16px;
-  --mw-line-height: 1.7;
-  --mw-heading-line-height: 1.3;
-  --mw-heading-weight: 700;
-
-  /* Surfaces */
   --mw-bg: #ffffff;
   --mw-surface: rgb(247, 247, 245);
   --mw-surface-hover: rgba(55, 53, 47, 0.06);
   --mw-popover-bg: #ffffff;
-
-  /* Text */
   --mw-fg: rgb(25, 25, 24);
   --mw-fg-muted: rgb(120, 119, 116);
   --mw-fg-faint: rgb(155, 155, 151);
-  --mw-placeholder: rgb(178, 178, 174);
-
-  /* Lines */
   --mw-border: rgb(233, 233, 231);
   --mw-border-strong: rgb(211, 211, 208);
-
-  /* Accent / interaction */
-  --mw-accent: rgb(35, 131, 226);
-  --mw-accent-fg: #ffffff;
   --mw-focus: rgb(35, 131, 226);
   --mw-selection: rgba(35, 131, 226, 0.2);
-
-  /* Inline & block code */
   --mw-code-bg: rgba(135, 131, 120, 0.15);
   --mw-code-fg: rgb(212, 76, 71);
   --mw-code-block-bg: rgb(247, 246, 243);
-
-  /* Quotes & links */
-  --mw-quote-border: rgba(55, 53, 47, 0.24);
-  --mw-quote-fg: var(--mw-fg);
   --mw-link: rgb(35, 131, 226);
-  --mw-link-hover: rgb(20, 105, 195);
-
-  /* Tables */
-  --mw-table-header-bg: var(--mw-surface);
-  --mw-table-stripe: transparent;
-  --mw-table-highlight: rgba(35, 131, 226, 0.1);
-
-  /* Shape & layout */
   --mw-radius: 6px;
-  --mw-radius-lg: 10px;
   --mw-content-width: 900px;
   --mw-content-padding-x: 96px;
-  --mw-content-padding-top: 40px;
+  --mw-content-padding-top: 36px;
   --mw-content-padding-bottom: 96px;
-  --mw-shadow-popover: 0 12px 32px rgba(15, 15, 15, 0.14),
-    0 0 0 1px rgba(15, 15, 15, 0.06);
 }
 
-/*
- * Auto dark mode — follows the active VS Code theme kind (the webview reports
- * it via prefers-color-scheme). Kept at :root specificity so a user themePath
- * file loaded after this stylesheet overrides it. To force one mode regardless
- * of VS Code, set markdownWysiwyg.themePath to a theme that hard-codes tokens.
- */
 @media (prefers-color-scheme: dark) {
   :root {
     --mw-bg: rgb(25, 25, 25);
     --mw-surface: rgb(37, 37, 37);
     --mw-surface-hover: rgba(255, 255, 255, 0.055);
     --mw-popover-bg: rgb(37, 37, 37);
-
     --mw-fg: rgba(255, 255, 255, 0.9);
     --mw-fg-muted: rgba(255, 255, 255, 0.46);
     --mw-fg-faint: rgba(255, 255, 255, 0.34);
-    --mw-placeholder: rgba(255, 255, 255, 0.28);
-
     --mw-border: rgba(255, 255, 255, 0.094);
     --mw-border-strong: rgba(255, 255, 255, 0.16);
-
     --mw-focus: rgb(45, 143, 240);
     --mw-selection: rgba(35, 131, 226, 0.32);
-
     --mw-code-bg: rgba(255, 255, 255, 0.08);
     --mw-code-fg: rgb(255, 168, 122);
     --mw-code-block-bg: rgb(31, 31, 31);
-
-    --mw-quote-border: rgba(255, 255, 255, 0.24);
     --mw-link: rgb(95, 168, 244);
-    --mw-link-hover: rgb(135, 190, 248);
-
-    --mw-table-header-bg: rgb(32, 32, 32);
-    --mw-table-stripe: rgba(255, 255, 255, 0.022);
-    --mw-table-highlight: rgba(35, 131, 226, 0.22);
-
-    --mw-shadow-popover: 0 12px 32px rgba(0, 0, 0, 0.5),
-      0 0 0 1px rgba(255, 255, 255, 0.08);
   }
 }
 
@@ -119,7 +57,6 @@ body {
   color: var(--mw-fg);
   background: var(--mw-bg);
   font-family: var(--mw-font-family);
-  font-size: var(--mw-font-size);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -129,13 +66,10 @@ body {
 }
 
 #root {
-  display: grid;
-  grid-template-rows: auto 1fr;
+  min-height: 100%;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
 }
-
-/* Toolbar ------------------------------------------------------------------ */
 
 .toolbar {
   position: sticky;
@@ -164,87 +98,13 @@ body {
   background: transparent;
   font: inherit;
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
 }
 
 .toolbar button:hover,
-.toolbar summary:hover,
-.toolbar button:focus-visible,
-.toolbar summary:focus-visible,
-.toolbar button[aria-pressed="true"] {
+.toolbar button:focus-visible {
   color: var(--mw-fg);
   background: var(--mw-surface-hover);
   outline: none;
-}
-
-.toolbar-menu {
-  position: relative;
-}
-
-.toolbar-menu summary {
-  display: inline-grid;
-  place-items: center;
-  min-width: 28px;
-  height: 28px;
-  padding: 0 7px;
-  border: 1px solid transparent;
-  border-radius: var(--mw-radius);
-  color: var(--mw-fg-muted);
-  background: transparent;
-  cursor: pointer;
-  list-style: none;
-  user-select: none;
-}
-
-.toolbar-menu summary::-webkit-details-marker {
-  display: none;
-}
-
-.toolbar-menu[open] summary {
-  color: var(--mw-fg);
-  background: var(--mw-surface-hover);
-}
-
-.toolbar-menu-popover {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 20;
-  display: grid;
-  grid-template-columns: repeat(5, 34px);
-  gap: 4px;
-  padding: 6px;
-  border-radius: var(--mw-radius-lg);
-  background: var(--mw-popover-bg);
-  box-shadow: var(--mw-shadow-popover);
-}
-
-.toolbar-menu-popover button {
-  min-width: 34px;
-  padding: 0;
-  font-size: 12px;
-  letter-spacing: 0;
-}
-
-.toolbar-menu-popover button .table-icon {
-  width: 18px;
-  height: 18px;
-  display: block;
-  pointer-events: none;
-}
-
-.toolbar-icon {
-  width: 18px;
-  height: 18px;
-  display: block;
-  pointer-events: none;
-}
-
-.divider {
-  width: 1px;
-  height: 18px;
-  margin: 0 6px;
-  background: var(--mw-border);
 }
 
 .status {
@@ -255,33 +115,76 @@ body {
   text-align: right;
 }
 
-/* Document ----------------------------------------------------------------- */
+.toolbar-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+  pointer-events: none;
+}
+
+.editor-shell {
+  min-height: 0;
+  overflow: visible;
+}
 
 .editor {
   box-sizing: border-box;
   width: min(100%, calc(var(--mw-content-width) + var(--mw-content-padding-x) * 2));
   min-height: 100%;
-  max-height: 100%;
   margin: 0 auto;
   padding: var(--mw-content-padding-top) var(--mw-content-padding-x)
     var(--mw-content-padding-bottom);
-  line-height: var(--mw-line-height);
+  overflow: visible;
+}
+
+.milkdown {
+  color: var(--mw-fg);
+  background: transparent;
+  font-family: var(--mw-font-family);
+  overflow: visible;
+  --crepe-color-background: var(--mw-bg);
+  --crepe-color-surface: var(--mw-bg);
+  --crepe-color-surface-low: var(--mw-surface);
+  --crepe-color-on-background: var(--mw-fg);
+  --crepe-color-on-surface: var(--mw-fg);
+  --crepe-color-on-surface-variant: var(--mw-fg-muted);
+  --crepe-color-outline: var(--mw-border-strong);
+  --crepe-color-primary: var(--mw-focus);
+  --crepe-color-hover: var(--mw-surface-hover);
+  --crepe-color-selected: var(--mw-surface-hover);
+  --crepe-color-inline-code: var(--mw-code-fg);
+  --crepe-color-inline-area: var(--mw-code-bg);
+  --crepe-font-default: var(--mw-font-family);
+  --crepe-font-code: var(--mw-mono-font-family);
+}
+
+.milkdown .ProseMirror {
+  min-height: 70vh;
   outline: none;
-  overflow: auto;
-  overflow-wrap: anywhere;
 }
 
-.editor:empty::before {
-  content: "Start writing...";
-  color: var(--mw-placeholder);
+.milkdown .milkdown-top-bar {
+  top: 40px;
+  z-index: 9;
+  margin: calc(var(--mw-content-padding-top) * -1) calc(var(--mw-content-padding-x) * -1)
+    24px;
 }
 
-/* Frontmatter (Notion "Properties" style: borderless rows) ----------------- */
+.milkdown .ProseMirror p,
+.milkdown .ProseMirror li,
+.milkdown .ProseMirror blockquote {
+  line-height: 1.7;
+}
+
+.milkdown a {
+  color: var(--mw-link);
+}
 
 .frontmatter-panel {
   margin: 0 0 28px;
   padding: 0 0 20px;
   border-bottom: 1px solid var(--mw-border);
+  font-family: var(--mw-font-family);
 }
 
 .frontmatter-title {
@@ -289,7 +192,6 @@ body {
   color: var(--mw-fg-muted);
   font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0;
 }
 
 .frontmatter-panel table {
@@ -308,221 +210,50 @@ body {
 .frontmatter-panel th {
   width: 220px;
   color: var(--mw-fg-muted);
-  background: transparent;
   font-weight: 400;
   text-align: left;
 }
 
 .frontmatter-panel td {
-  color: var(--mw-fg);
-  cursor: text;
   border-radius: var(--mw-radius);
+  cursor: text;
 }
 
 .frontmatter-panel tr:hover td {
   background: var(--mw-surface-hover);
 }
 
-.frontmatter-panel th:focus,
-.frontmatter-panel td:focus {
-  outline: none;
-  background: var(--mw-surface-hover);
-  box-shadow: inset 0 0 0 1px var(--mw-focus);
-}
-
-/* Headings ----------------------------------------------------------------- */
-
-.editor h1,
-.editor h2,
-.editor h3,
-.editor h4,
-.editor h5,
-.editor h6 {
-  line-height: var(--mw-heading-line-height);
-  font-weight: var(--mw-heading-weight);
-  margin: 1.4em 0 0.4em;
-}
-
-.editor h1 {
-  font-size: 2.1em;
-  margin-top: 0.2em;
-  letter-spacing: -0.02em;
-}
-
-.editor h2 {
-  font-size: 1.5em;
-  letter-spacing: -0.01em;
-}
-
-.editor h3 {
-  font-size: 1.25em;
-}
-
-.editor p,
-.editor ul,
-.editor ol,
-.editor table,
-.editor blockquote,
-.editor pre {
-  margin: 0.6em 0;
-}
-
-/* Tables ------------------------------------------------------------------- */
-
-.editor table {
+.frontmatter-input {
+  box-sizing: border-box;
   width: 100%;
-  border-collapse: collapse;
-  table-layout: auto;
-  cursor: text;
-}
-
-.editor th,
-.editor td {
-  padding: 7px 10px;
-  border: 1px solid var(--mw-border-strong);
-  vertical-align: top;
-  min-width: 48px;
-  min-height: 32px;
-  height: 32px;
-  line-height: 1.5;
-}
-
-.editor th {
-  background: var(--mw-table-header-bg);
-  font-weight: 600;
-}
-
-.editor tbody tr:nth-child(even) td {
-  background: var(--mw-table-stripe);
-}
-
-.editor table:has(.table-active-cell) tbody tr:nth-child(even) td {
-  background: transparent;
-}
-
-.editor tr.table-active-row > th,
-.editor tr.table-active-row > td,
-.editor th.table-active-column,
-.editor td.table-active-column {
-  background: var(--mw-table-highlight) !important;
-}
-
-.editor .table-active-cell {
-  box-shadow: inset 0 0 0 1px var(--mw-focus);
-}
-
-/* Selected state: focusable but not editable — signal "navigate", not "type". */
-.editor table td[contenteditable="false"],
-.editor table th[contenteditable="false"] {
-  cursor: default;
-}
-
-.editor td:focus,
-.editor th:focus {
-  outline: 1px solid var(--mw-focus);
-  outline-offset: -1px;
-}
-
-/* Editing state: solid ring + text caret. */
-.editor td.table-cell-editing,
-.editor th.table-cell-editing {
-  box-shadow: inset 0 0 0 2px var(--mw-focus);
-  background: var(--mw-bg);
-  cursor: text;
-}
-
-/* Lists & tasks ------------------------------------------------------------ */
-
-.editor .contains-task-list {
-  padding-left: 1.4em;
-}
-
-.editor .task-list-item {
-  list-style: none;
-}
-
-.editor .task-list-item input {
-  margin-left: -1.2em;
-  margin-right: 0.45em;
-  cursor: pointer;
-  accent-color: var(--mw-accent);
-}
-
-/* Quotes, code, links ------------------------------------------------------ */
-
-.editor blockquote {
-  padding-left: 14px;
-  border-left: 3px solid var(--mw-quote-border);
-  color: var(--mw-quote-fg);
-}
-
-.editor code {
-  padding: 0.12em 0.32em;
-  border-radius: 3px;
-  background: var(--mw-code-bg);
-  color: var(--mw-code-fg);
-  font-family: var(--mw-mono-font-family);
-  font-size: 0.86em;
-}
-
-.editor pre {
-  padding: 14px 16px;
+  padding: 4px 6px;
+  border: 1px solid var(--mw-focus);
   border-radius: var(--mw-radius);
-  overflow: auto;
-  background: var(--mw-code-block-bg);
-}
-
-.editor pre code {
-  padding: 0;
-  background: transparent;
   color: var(--mw-fg);
-  font-size: 0.86em;
+  background: var(--mw-bg);
+  font: inherit;
+  outline: none;
 }
 
-.editor a {
-  color: var(--mw-link);
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--mw-link) 40%, transparent);
-  text-underline-offset: 2px;
+.frontmatter-empty {
+  color: var(--mw-fg-faint);
+  font-size: 13px;
 }
 
-.editor a:hover,
-.editor a:focus-visible {
-  color: var(--mw-link-hover);
-  text-decoration-color: currentColor;
-}
-
-.editor img {
-  max-width: 100%;
-}
-
-.editor .mermaid-block {
-  margin: 1em 0;
-  padding: 14px;
-  border: 1px solid var(--mw-border);
-  border-radius: var(--mw-radius);
-  background: var(--mw-surface);
+.mermaid-preview {
   overflow: auto;
+  padding: 12px;
+  color: var(--mw-fg-muted);
 }
 
-.editor .mermaid {
-  display: flex;
-  justify-content: center;
-}
-
-.editor .katex,
-.editor .katex-display {
-  cursor: default;
+.mermaid-preview svg {
+  max-width: 100%;
+  height: auto;
 }
 
 @media (max-width: 880px) {
   :root {
     --mw-content-padding-x: 24px;
     --mw-content-padding-top: 24px;
-  }
-
-  .toolbar {
-    flex-wrap: wrap;
   }
 }

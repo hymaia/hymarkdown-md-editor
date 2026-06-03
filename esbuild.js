@@ -5,7 +5,12 @@ const watch = process.argv.includes("--watch");
 const common = {
   bundle: true,
   sourcemap: true,
-  logLevel: "info"
+  logLevel: "info",
+  loader: {
+    ".ttf": "file",
+    ".woff": "file",
+    ".woff2": "file"
+  }
 };
 
 const builds = [
