@@ -1,23 +1,24 @@
 ---
-
 title: Sample note
 tags:
-
-* markdown
-* wysiwyg
-* toto;
-
+  - markdown
+  - wysiwyg
+  - totod
+  - dqsdsq
 ---
 
+
 # Editable Markdown
+
+<br />
 
 This file exercises **Markdown**, _inline emphasis_, ~~strikethrough~~, `inline code`, [inline links](https://code.visualstudio.com/ "https://code.visualstudio.com/"), and GitHub-flavored Markdown.
 
 ## Headings
 
-### Heading level 3
-
 #### Heading level 4
+
+### Heading level 3
 
 ## Paragraphs And Line Breaks
 
@@ -34,11 +35,16 @@ This line should appear directly below the previous one.
 >
 > > This is a nested blockquote.
 
+![1.00](blob:vscode-webview://0nf4sumqorculd43chkjni7b7vt33bitjs55g8gti6nd5irg68an/b7b4f409-0d80-469f-8ad0-b016837ed4a9)
+
 ## Lists
 
 * Unordered item
+
 * Another item
+
   * Nested item
+
   * Nested item with **bold**
 
 1. Ordered item
@@ -48,28 +54,21 @@ This line should appear directly below the previous one.
 ## GitHub Task Lists
 
 * Render checked tasks
+
 * Render unchecked tasks
+
 * Preserve task list markdown when possible
 
-## Table
-
-| Syntax                                              |                 | Column | Example | Notes |
-| --------------------------------------------------- | --------------- | ------ | ------- | ----- |
-| Bold                                                |                 |        |         |       |
-| **text**                                            | Strong emphasis |        |         |       |
-|                                                     |                 |        |         |       |
-|                                                     |                 |        |         |       |
-|                                                     |                 |        |         |       |
-|                                                     |                 |        |         |       |
-|                                                     |                 |        |         |       |
-|                                                     |                 |        |         |       |
-|                                                     |                 |        |         |       |
-|                                                     |                 |        |         |       |
-| [label](https://example.com "https://example.com/") | Inline link     |        |         |       |
-| Code                                                |                 |        |         |       |
-| `` `value` ``                                       | Inline code     |        |         |       |
+#### le
 
 Use the rich editor table controls to insert rows and columns while the cursor is inside a table cell.
+
+| Item       | In Stock |  Price |
+| :--------- | :------: | -----: |
+| SQL Hat    |   True   |  23.99 |
+| Python Hat |   True   |  23.99 |
+| <br />     |  <br />  | <br /> |
+| <br />     |  <br />  | <br /> |
 
 ## Mermaid
 
@@ -115,7 +114,7 @@ This sentence uses a collapsed [reference](https://github.github.com/gfm/ "https
 
 ## Images
 
-![1.00](https://code.visualstudio.com/assets/images/code-stable.png)
+![1.00](https://cdn.pixabay.com/photo/2024/05/26/10/15/bird-8788491_1280.jpg)
 
 ## Autolinks
 
@@ -126,5 +125,5 @@ This sentence uses a collapsed [reference](https://github.github.com/gfm/ "https
 Markdown source can contain inline HTML in many renderers, but this editor sanitizes raw HTML by default for safety.
 
 * [ ] Test
-* [x] Unchecked
 
+* [x] Unchecked

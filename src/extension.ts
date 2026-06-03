@@ -3,6 +3,16 @@ import * as vscode from "vscode";
 
 const viewType = "markdownWysiwyg.editor";
 
+type WebviewRequest =
+  | { type: "uploadImage"; requestId: number; fileName: string; mimeType: string; dataUrl: string }
+  | { type: "resolveWebviewUrl"; requestId: number; url: string };
+
+type WebviewResponse =
+  | { type: "uploadImageResult"; requestId: number; markdownPath: string }
+  | { type: "uploadImageError"; requestId: number; error: string }
+  | { type: "resolveWebviewUrlResult"; requestId: number; url: string }
+  | { type: "resolveWebviewUrlError"; requestId: number; error: string };
+
 export function activate(context: vscode.ExtensionContext) {
   const provider = new MarkdownWysiwygProvider(context);
 
@@ -37,11 +47,13 @@ class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
   ): void {
     const render = () => {
       const themeUri = this.resolveThemeUri(document.uri);
+      const documentRoot = this.resolveDocumentRoot(document.uri);
       webviewPanel.webview.options = {
         enableScripts: true,
         localResourceRoots: [
           vscode.Uri.joinPath(this.context.extensionUri, "dist"),
           vscode.Uri.joinPath(this.context.extensionUri, "media"),
+          ...(documentRoot ? [documentRoot] : []),
           ...(themeUri ? [vscode.Uri.joinPath(themeUri, "..")] : [])
         ]
       };
@@ -74,7 +86,10 @@ class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
     });
 
     const configListener = vscode.workspace.onDidChangeConfiguration(event => {
-      if (event.affectsConfiguration("markdownWysiwyg.themePath")) {
+      if (
+        event.affectsConfiguration("markdownWysiwyg.themePath") ||
+        event.affectsConfiguration("markdownWysiwyg.baseFontSize")
+      ) {
         webviewReady = false;
         render();
       }
@@ -99,6 +114,20 @@ class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
         await vscode.commands.executeCommand(
           "workbench.action.openSettings",
           "@ext:local.markdown-wysiwyg-editor markdownWysiwyg"
+        );
+        return;
+      }
+
+      if (message?.type === "uploadImage") {
+        await this.handleUploadImageRequest(webviewPanel.webview, document, message as WebviewRequest);
+        return;
+      }
+
+      if (message?.type === "resolveWebviewUrl") {
+        await this.handleResolveWebviewUrlRequest(
+          webviewPanel.webview,
+          document,
+          message as WebviewRequest
         );
         return;
       }
@@ -164,6 +193,7 @@ class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
     const katexStyleUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.context.extensionUri, "media", "katex", "katex.min.css")
     );
+    const baseFontSize = this.resolveBaseFontSize(resource);
     // Loaded last so it can override the --mw-* design tokens from editor.css.
     const themeLink = themeUri
       ? `\n  <link href="${webview.asWebviewUri(themeUri)}" rel="stylesheet">`
@@ -173,11 +203,15 @@ class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: data:; font-src ${webview.cspSource}; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: data:; font-src ${webview.cspSource} https://fonts.gstatic.com; style-src ${webview.cspSource} https://fonts.googleapis.com 'unsafe-inline'; script-src 'nonce-${nonce}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&family=Domine:wght@400..700&display=swap" rel="stylesheet">
   <link href="${katexStyleUri}" rel="stylesheet">
   <link href="${bundledEditorStyleUri}" rel="stylesheet">
-  <link href="${styleUri}" rel="stylesheet">${themeLink}
+  <link href="${styleUri}" rel="stylesheet">
+  <style>:root { --mw-base-font-size: ${baseFontSize}px; }</style>${themeLink}
   <title>Markdown WYSIWYG</title>
 </head>
 <body data-resource="${escapeHtml(resource.toString())}">
@@ -199,6 +233,80 @@ class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;
+  }
+
+  private resolveBaseFontSize(documentUri: vscode.Uri): number {
+    const configured = vscode.workspace
+      .getConfiguration("markdownWysiwyg", documentUri)
+      .get<number>("baseFontSize", 16);
+    if (!Number.isFinite(configured)) {
+      return 16;
+    }
+
+    return Math.min(32, Math.max(8, configured));
+  }
+
+  private resolveDocumentRoot(documentUri: vscode.Uri): vscode.Uri | undefined {
+    if (documentUri.scheme !== "file") {
+      return undefined;
+    }
+
+    const folder = vscode.workspace.getWorkspaceFolder(documentUri);
+    if (folder) {
+      return folder.uri;
+    }
+
+    return vscode.Uri.file(path.dirname(documentUri.fsPath));
+  }
+
+  private async handleUploadImageRequest(
+    webview: vscode.Webview,
+    document: vscode.TextDocument,
+    message: WebviewRequest
+  ): Promise<void> {
+    if (message.type !== "uploadImage") {
+      return;
+    }
+
+    try {
+      const markdownPath = await saveImageNextToMarkdown(document, message);
+      await postWebviewMessage(webview, {
+        type: "uploadImageResult",
+        requestId: message.requestId,
+        markdownPath
+      });
+    } catch (error) {
+      await postWebviewMessage(webview, {
+        type: "uploadImageError",
+        requestId: message.requestId,
+        error: getErrorMessage(error)
+      });
+    }
+  }
+
+  private async handleResolveWebviewUrlRequest(
+    webview: vscode.Webview,
+    document: vscode.TextDocument,
+    message: WebviewRequest
+  ): Promise<void> {
+    if (message.type !== "resolveWebviewUrl") {
+      return;
+    }
+
+    try {
+      const url = resolveWebviewUrl(document, webview, message.url);
+      await postWebviewMessage(webview, {
+        type: "resolveWebviewUrlResult",
+        requestId: message.requestId,
+        url
+      });
+    } catch (error) {
+      await postWebviewMessage(webview, {
+        type: "resolveWebviewUrlError",
+        requestId: message.requestId,
+        error: getErrorMessage(error)
+      });
+    }
   }
 }
 
@@ -227,4 +335,145 @@ function escapeHtml(value: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
+}
+
+async function postWebviewMessage(webview: vscode.Webview, message: WebviewResponse): Promise<void> {
+  await webview.postMessage(message);
+}
+
+async function saveImageNextToMarkdown(
+  document: vscode.TextDocument,
+  message: Extract<WebviewRequest, { type: "uploadImage" }>
+): Promise<string> {
+  if (document.uri.scheme !== "file") {
+    throw new Error("Save the Markdown file first so uploaded images can be copied next to it.");
+  }
+
+  const documentDir = vscode.Uri.file(path.dirname(document.uri.fsPath));
+  const targetName = await findAvailableImageName(documentDir, buildImageFileName(message.fileName, message.mimeType));
+  const targetUri = vscode.Uri.joinPath(documentDir, targetName);
+  const bytes = decodeDataUrl(message.dataUrl);
+  await vscode.workspace.fs.writeFile(targetUri, bytes);
+
+  const relative = path.relative(documentDir.fsPath, targetUri.fsPath).replaceAll(path.sep, "/");
+  return relative || path.basename(targetUri.fsPath);
+}
+
+async function findAvailableImageName(
+  directory: vscode.Uri,
+  fileName: string
+): Promise<string> {
+  const parsed = path.parse(fileName);
+  for (let index = 0; index < 10_000; index += 1) {
+    const candidate = index === 0 ? fileName : `${parsed.name}-${index}${parsed.ext}`;
+    const candidateUri = vscode.Uri.joinPath(directory, candidate);
+    try {
+      await vscode.workspace.fs.stat(candidateUri);
+    } catch (error) {
+      if (isFileNotFoundError(error)) {
+        return candidate;
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error("Unable to find a free image filename.");
+}
+
+function buildImageFileName(fileName: string, mimeType: string): string {
+  const sanitized = sanitizeFileName(path.basename(fileName));
+  const parsed = path.parse(sanitized);
+  const ext = parsed.ext || mimeTypeToExtension(mimeType) || ".png";
+  const base = parsed.name || "image";
+  return `${base}${ext.startsWith(".") ? ext : `.${ext}`}`;
+}
+
+function sanitizeFileName(fileName: string): string {
+  return fileName.replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_").trim() || "image";
+}
+
+function mimeTypeToExtension(mimeType: string): string {
+  switch (mimeType.toLowerCase()) {
+    case "image/jpeg":
+    case "image/jpg":
+      return ".jpg";
+    case "image/png":
+      return ".png";
+    case "image/gif":
+      return ".gif";
+    case "image/webp":
+      return ".webp";
+    case "image/svg+xml":
+      return ".svg";
+    case "image/bmp":
+      return ".bmp";
+    case "image/tiff":
+      return ".tiff";
+    case "image/avif":
+      return ".avif";
+    default:
+      return "";
+  }
+}
+
+function decodeDataUrl(dataUrl: string): Uint8Array {
+  const match = /^data:([^;,]+)?(?:;charset=[^;,]+)?(;base64)?,(.*)$/s.exec(dataUrl);
+  if (!match) {
+    throw new Error("Invalid image payload.");
+  }
+
+  const payload = match[3] ?? "";
+  if (!match[2]) {
+    return new Uint8Array(Buffer.from(decodeURIComponent(payload), "utf8"));
+  }
+
+  return new Uint8Array(Buffer.from(payload, "base64"));
+}
+
+function isFileNotFoundError(error: unknown): boolean {
+  return (
+    error instanceof vscode.FileSystemError &&
+    error.code === "FileNotFound"
+  );
+}
+
+function resolveWebviewUrl(
+  document: vscode.TextDocument,
+  webview: vscode.Webview,
+  url: string
+): string {
+  if (isExternalImageUrl(url)) {
+    return url;
+  }
+
+  if (url.startsWith("file:")) {
+    return webview.asWebviewUri(vscode.Uri.parse(url)).toString();
+  }
+
+  if (document.uri.scheme !== "file") {
+    return url;
+  }
+
+  const documentDir = path.dirname(document.uri.fsPath);
+  const absolutePath = path.resolve(documentDir, url);
+  return webview.asWebviewUri(vscode.Uri.file(absolutePath)).toString();
+}
+
+function isExternalImageUrl(url: string): boolean {
+  return (
+    url.startsWith("http:") ||
+    url.startsWith("https:") ||
+    url.startsWith("data:") ||
+    url.startsWith("blob:") ||
+    url.startsWith("vscode-webview:")
+  );
 }

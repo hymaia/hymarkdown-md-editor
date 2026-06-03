@@ -45,6 +45,14 @@
           "default": "",
           "markdownDescription": "Path to a CSS file that overrides the editor's `--mw-*` design tokens to re-theme the WYSIWYG view. Absolute, or relative to the workspace folder. Leave empty for the built-in light theme. An example dark theme ships at `media/themes/notion-dark.css`.",
           "scope": "resource"
+        },
+        "markdownWysiwyg.baseFontSize": {
+          "type": "number",
+          "default": 16,
+          "minimum": 8,
+          "maximum": 32,
+          "markdownDescription": "Base font size, in pixels, for the WYSIWYG editor. The built-in default is `16`; custom theme CSS loaded through `markdownWysiwyg.themePath` can still override `--mw-base-font-size`.",
+          "scope": "resource"
         }
       }
     },
