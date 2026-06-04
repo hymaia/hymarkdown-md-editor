@@ -9,7 +9,7 @@ tags:
 
 # Editable Markdown
 
-This file exercises **Markdown**, _inline emphasis_, ~~strikethrough~~, `inline code`, [inline links](https://code.visualstudio.com/ "https://code.visualstudio.com/"), and GitHub-flavored Markdown.
+This file exercises Markdown, inline emphasis, strikethrough, inline code, inline links, and GitHub-flavored Markdown.
 
 ## Headings
 
@@ -56,7 +56,7 @@ This line should appear directly below the previous one.
 
 * Preserve task list markdown when possible
 
-#### le
+#### qddqsdqjk
 
 Use the rich editor table controls to insert rows and columns while the cursor is inside a table cell.
 

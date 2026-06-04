@@ -283,6 +283,78 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
   pointer-events: none;
 }
 
+.milkdown .milkdown-block-handle:has(.mw-block-handle-actions:hover) .operation-item:hover {
+  background: transparent;
+}
+
+.milkdown .milkdown-block-handle .operation-item,
+.milkdown .milkdown-block-handle .operation-item svg {
+  color: var(--crepe-color-outline);
+  fill: var(--crepe-color-outline);
+}
+
+.milkdown .milkdown-block-handle .mw-delete-block,
+.milkdown .milkdown-block-handle .mw-block-handle-actions {
+  color: var(--crepe-color-on-surface);
+}
+
+.milkdown .milkdown-block-handle .mw-delete-block svg {
+  fill: var(--crepe-color-on-surface);
+}
+
+.milkdown .milkdown-block-handle .mw-block-handle-actions {
+  position: absolute;
+  top: -52px;
+  display: none;
+  transform: translateX(-50%);
+  background-color: var(--crepe-color-surface);
+  border-radius: 8px;
+  box-shadow: var(--crepe-shadow-1);
+}
+
+.milkdown .milkdown-block-handle .mw-block-handle-actions::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  width: 100%;
+  height: 8px;
+  background-color: transparent;
+}
+
+.milkdown .milkdown-block-handle .mw-block-handle-actions[data-show="true"] {
+  display: flex;
+}
+
+.milkdown .milkdown-block-handle .mw-delete-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 6px;
+  padding: 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.milkdown .milkdown-block-handle .mw-delete-block svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.milkdown .milkdown-block-handle .mw-delete-block:hover,
+.milkdown .milkdown-block-handle .mw-delete-block:focus-visible {
+  border-radius: 8px;
+  background-color: var(--crepe-color-hover);
+  outline: none;
+}
+
+.milkdown .milkdown-block-handle .mw-delete-block:active {
+  background: var(--crepe-color-selected);
+}
+
 .milkdown .milkdown-slash-menu .menu-groups .menu-group h6,
 .milkdown .milkdown-slash-menu .menu-groups .menu-group li > span {
   color: var(--crepe-color-on-surface);
@@ -300,6 +372,16 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
 }
 
 .milkdown .milkdown-toolbar .toolbar-item.active svg {
+  color: var(--crepe-color-on-surface);
+  fill: var(--crepe-color-on-surface);
+}
+
+.milkdown .milkdown-table-block .handle,
+.milkdown .milkdown-table-block .cell-handle,
+.milkdown .milkdown-table-block .line-handle .add-button,
+.milkdown .milkdown-table-block .cell-handle button,
+.milkdown .milkdown-table-block .cell-handle svg,
+.milkdown .milkdown-table-block .line-handle .add-button svg {
   color: var(--crepe-color-on-surface);
   fill: var(--crepe-color-on-surface);
 }
@@ -453,7 +535,7 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
   height: 28px;
   padding: 6px 0;
   border-radius: 100px;
-  color: var(--crepe-color-outline);
+  color: var(--crepe-color-on-surface);
   background-color: var(--crepe-color-surface);
   box-shadow: var(--crepe-shadow-1);
   cursor: grab;
@@ -485,7 +567,7 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
   display: block;
   width: 16px;
   height: 16px;
-  fill: var(--crepe-color-outline);
+  fill: var(--crepe-color-on-surface);
 }
 
 .frontmatter-button-group {
@@ -521,7 +603,7 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
   padding: 4px;
   border: 0;
   border-radius: 4px;
-  color: var(--crepe-color-outline);
+  color: var(--crepe-color-on-surface);
   background: transparent;
   line-height: 1;
   cursor: pointer;
@@ -544,7 +626,7 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
   display: block;
   width: 24px;
   height: 24px;
-  fill: var(--crepe-color-outline);
+  fill: var(--crepe-color-on-surface);
 }
 
 .frontmatter-delete-row:hover,
