@@ -365,7 +365,7 @@ async function saveImageNextToMarkdown(
   await vscode.workspace.fs.writeFile(targetUri, bytes);
 
   const relative = path.relative(documentDir.fsPath, targetUri.fsPath).replaceAll(path.sep, "/");
-  return relative || path.basename(targetUri.fsPath);
+  return encodeMarkdownUrlPath(relative || path.basename(targetUri.fsPath));
 }
 
 async function findAvailableImageName(
@@ -440,6 +440,13 @@ function decodeDataUrl(dataUrl: string): Uint8Array {
   return new Uint8Array(Buffer.from(payload, "base64"));
 }
 
+function encodeMarkdownUrlPath(value: string): string {
+  return value
+    .split("/")
+    .map(segment => encodeURIComponent(segment))
+    .join("/");
+}
+
 function isFileNotFoundError(error: unknown): boolean {
   return (
     error instanceof vscode.FileSystemError &&
@@ -452,6 +459,10 @@ function resolveWebviewUrl(
   webview: vscode.Webview,
   url: string
 ): string {
+  if (!url.trim()) {
+    return url;
+  }
+
   if (isExternalImageUrl(url)) {
     return url;
   }
@@ -465,8 +476,16 @@ function resolveWebviewUrl(
   }
 
   const documentDir = path.dirname(document.uri.fsPath);
-  const absolutePath = path.resolve(documentDir, url);
+  const absolutePath = path.resolve(documentDir, decodeMarkdownUrlPath(url));
   return webview.asWebviewUri(vscode.Uri.file(absolutePath)).toString();
+}
+
+function decodeMarkdownUrlPath(value: string): string {
+  try {
+    return decodeURI(value);
+  } catch {
+    return value;
+  }
 }
 
 function isExternalImageUrl(url: string): boolean {

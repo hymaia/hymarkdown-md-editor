@@ -730,26 +730,30 @@ function getBlockHandlePosition({
 
 async function uploadImageFile(file: File): Promise<string> {
   const dataUrl = await readFileAsDataUrl(file);
-  const result = await postWebviewRequest<{ markdownPath: string }>({
+  const markdownPath = await postWebviewRequest<string>({
     type: "uploadImage",
     fileName: file.name,
     mimeType: file.type,
     dataUrl
   });
-  return result.markdownPath;
+  return markdownPath;
 }
 
 async function resolveDomUrl(url: string): Promise<string> {
+  if (!url.trim()) {
+    return url;
+  }
+
   if (isExternalImageUrl(url)) {
     return url;
   }
 
   try {
-    const result = await postWebviewRequest<{ url: string }>({
+    const resolvedUrl = await postWebviewRequest<string>({
       type: "resolveWebviewUrl",
       url
     });
-    return result.url;
+    return resolvedUrl;
   } catch {
     return url;
   }
