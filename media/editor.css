@@ -291,6 +291,16 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
   text-transform: none;
 }
 
+.milkdown .milkdown-toolbar .toolbar-item svg {
+  color: var(--crepe-color-on-surface);
+  fill: var(--crepe-color-on-surface);
+}
+
+.milkdown .milkdown-toolbar .toolbar-item.active svg {
+  color: var(--crepe-color-on-surface);
+  fill: var(--crepe-color-on-surface);
+}
+
 .milkdown .ProseMirror h1,
 .milkdown .ProseMirror h2,
 .milkdown .ProseMirror h3,
