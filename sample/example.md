@@ -7,10 +7,7 @@ tags:
   - dqsdsq
 ---
 
-
 # Editable Markdown
-
-<br />
 
 This file exercises **Markdown**, _inline emphasis_, ~~strikethrough~~, `inline code`, [inline links](https://code.visualstudio.com/ "https://code.visualstudio.com/"), and GitHub-flavored Markdown.
 

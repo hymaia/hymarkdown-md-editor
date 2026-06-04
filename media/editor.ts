@@ -140,6 +140,16 @@ type ListSelection = {
   node(depth: number): ListItemNode;
   before(depth: number): number;
 };
+type BlockHandlePositionContext = {
+  active: {
+    el: HTMLElement;
+    node: {
+      type: {
+        name: string;
+      };
+    };
+  };
+};
 
 const bulletListIcon = `
   <svg
@@ -188,6 +198,48 @@ const todoListIcon = `
   >
     <path
       d="M5.66936 16.3389L9.39244 12.6158C9.54115 12.4671 9.71679 12.3937 9.91936 12.3957C10.1219 12.3976 10.2975 12.4761 10.4463 12.6312C10.5847 12.7823 10.654 12.9585 10.654 13.1599C10.654 13.3613 10.5847 13.5363 10.4463 13.6851L6.32704 17.8197C6.14627 18.0004 5.93538 18.0908 5.69436 18.0908C5.45333 18.0908 5.24243 18.0004 5.06166 17.8197L3.01744 15.7754C2.87899 15.637 2.81136 15.4629 2.81456 15.2533C2.81776 15.0437 2.88859 14.8697 3.02706 14.7312C3.16551 14.5928 3.34008 14.5235 3.55076 14.5235C3.76144 14.5235 3.93494 14.5928 4.07126 14.7312L5.66936 16.3389ZM5.66936 8.72359L9.39244 5.00049C9.54115 4.85177 9.71679 4.77838 9.91936 4.78031C10.1219 4.78223 10.2975 4.86075 10.4463 5.01586C10.5847 5.16691 10.654 5.34314 10.654 5.54454C10.654 5.74592 10.5847 5.92097 10.4463 6.06969L6.32704 10.2043C6.14627 10.3851 5.93538 10.4755 5.69436 10.4755C5.45333 10.4755 5.24243 10.3851 5.06166 10.2043L3.01744 8.16009C2.87899 8.02162 2.81136 7.84759 2.81456 7.63799C2.81776 7.42837 2.88859 7.25433 3.02706 7.11586C3.16551 6.97741 3.34008 6.90819 3.55076 6.90819C3.76144 6.90819 3.93494 6.97741 4.07126 7.11586L5.66936 8.72359ZM13.7597 16.5581C13.5472 16.5581 13.3691 16.4862 13.2253 16.3424C13.0816 16.1986 13.0097 16.0204 13.0097 15.8078C13.0097 15.5952 13.0816 15.4171 13.2253 15.2735C13.3691 15.13 13.5472 15.0582 13.7597 15.0582H20.7597C20.9722 15.0582 21.1503 15.1301 21.2941 15.2739C21.4378 15.4177 21.5097 15.5959 21.5097 15.8085C21.5097 16.0211 21.4378 16.1992 21.2941 16.3427C21.1503 16.4863 20.9722 16.5581 20.7597 16.5581H13.7597ZM13.7597 8.94276C13.5472 8.94276 13.3691 8.87085 13.2253 8.72704C13.0816 8.58324 13.0097 8.40504 13.0097 8.19244C13.0097 7.97985 13.0816 7.80177 13.2253 7.65819C13.3691 7.5146 13.5472 7.44281 13.7597 7.44281H20.7597C20.9722 7.44281 21.1503 7.51471 21.2941 7.65851C21.4378 7.80233 21.5097 7.98053 21.5097 8.19311C21.5097 8.40571 21.4378 8.5838 21.2941 8.72739C21.1503 8.87097 20.9722 8.94276 20.7597 8.94276H13.7597Z"
+    />
+  </svg>
+`;
+const topBarImageIcon = `
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+  >
+    <path
+      fill-rule="evenodd"
+      clip-rule="evenodd"
+      d="M4 5H20V19H4V5ZM6 7V15.2L9.2 12L12.4 15.2L14.4 13.2L18 16.8V7H6ZM18 19L14.4 15.4L12.4 17.4L9.2 14.2L6 17.4V17H6V19H18ZM16 11C15.17 11 14.5 10.33 14.5 9.5C14.5 8.67 15.17 8 16 8C16.83 8 17.5 8.67 17.5 9.5C17.5 10.33 16.83 11 16 11Z"
+    />
+  </svg>
+`;
+const topBarTableIcon = `
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+  >
+    <path
+      fill-rule="evenodd"
+      clip-rule="evenodd"
+      d="M4 5H20V19H4V5ZM6 7V9H18V7H6ZM6 11V17H10V11H6ZM12 11V17H18V11H12Z"
+    />
+  </svg>
+`;
+const topBarCodeBlockIcon = `
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+  >
+    <path
+      fill-rule="evenodd"
+      clip-rule="evenodd"
+      d="M3 5H21V19H3V5ZM5 7V17H19V7H5ZM10 12L7.5 9.5L6.1 10.9L7.2 12L6.1 13.1L7.5 14.5L10 12ZM12 14H17V16H12V14Z"
     />
   </svg>
 `;
@@ -252,6 +304,29 @@ toolbarElement.addEventListener("click", event => {
     vscode.postMessage({ type: "openSettings" });
   }
 });
+
+window.addEventListener("pointerdown", event => {
+  if (event.button !== 0) {
+    return;
+  }
+
+  const target = event.target;
+  if (!(target instanceof Element)) {
+    return;
+  }
+
+  if (target.closest(".milkdown-block-handle")) {
+    return;
+  }
+
+  if (editorRoot.contains(target) && target.closest(".ProseMirror")) {
+    document.body.dataset.mwSelectingText = "true";
+  }
+}, true);
+
+window.addEventListener("pointerup", clearTextSelectionDragState, true);
+window.addEventListener("pointercancel", clearTextSelectionDragState, true);
+window.addEventListener("blur", clearTextSelectionDragState);
 
 window.addEventListener("message", event => {
   const message = event.data as IncomingMessage;
@@ -327,10 +402,16 @@ async function applyMarkdown(markdown: string): Promise<void> {
     },
     featureConfigs: {
       [crepeModule.CrepeFeature.TopBar]: {
-        buildTopBar: configureListButtons
+        buildTopBar: configureListButtons,
+        imageIcon: topBarImageIcon,
+        tableIcon: topBarTableIcon,
+        codeBlockIcon: topBarCodeBlockIcon
       },
       [crepeModule.CrepeFeature.BlockEdit]: {
-        buildMenu: configureSlashMenuListButtons
+        buildMenu: configureSlashMenuListButtons,
+        blockHandle: {
+          getPosition: getBlockHandlePosition
+        }
       },
       [crepeModule.CrepeFeature.Placeholder]: {
         text: "Start writing...",
@@ -470,6 +551,10 @@ function setStatus(message: string): void {
   statusElement.textContent = message;
 }
 
+function clearTextSelectionDragState(): void {
+  delete document.body.dataset.mwSelectingText;
+}
+
 function configureListButtons(builder: GroupLikeBuilder): void {
   const listGroup = builder.getGroup("list");
   listGroup.clear()
@@ -494,14 +579,17 @@ function configureSlashMenuListButtons(builder: GroupLikeBuilder): void {
   const listGroup = builder.getGroup("list");
   listGroup.clear()
     .addItem("bullet-list", {
+      label: "Bullet List",
       icon: bulletListIcon,
       onRun: (ctx: unknown) => runListAction(ctx, "bullet")
     })
     .addItem("ordered-list", {
+      label: "Ordered List",
       icon: orderedListIcon,
       onRun: (ctx: unknown) => runListAction(ctx, "ordered")
     })
     .addItem("task-list", {
+      label: "Task List",
       icon: todoListIcon,
       onRun: (ctx: unknown) => runListAction(ctx, "task")
     });
@@ -620,6 +708,24 @@ function attachToolbarToTopBar(): void {
   }
 
   topBar.append(toolbarElement);
+}
+
+function getBlockHandlePosition({
+  active
+}: BlockHandlePositionContext): Omit<DOMRect, "toJSON"> {
+  const rect = active.el.getBoundingClientRect();
+  const topOffset = active.node.type.name === "list_item" ? 4 : 0;
+
+  return {
+    x: rect.x,
+    y: rect.y + topOffset,
+    top: rect.top + topOffset,
+    bottom: rect.bottom + topOffset,
+    left: rect.left,
+    right: rect.right,
+    width: rect.width,
+    height: rect.height
+  };
 }
 
 async function uploadImageFile(file: File): Promise<string> {
