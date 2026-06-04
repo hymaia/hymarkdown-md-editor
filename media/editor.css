@@ -95,17 +95,12 @@ body {
 }
 
 .toolbar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
   display: flex;
   align-items: center;
   gap: 2px;
-  min-height: 40px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--mw-border);
-  background: color-mix(in srgb, var(--mw-bg) 86%, transparent);
-  backdrop-filter: saturate(1.1) blur(8px);
+  min-height: 44px;
+  margin-left: auto;
+  padding: 0 0 0 12px;
   box-sizing: border-box;
 }
 
@@ -190,10 +185,21 @@ body {
 }
 
 .milkdown .milkdown-top-bar {
-  top: 40px;
+  top: 0;
   z-index: 9;
   margin: calc(var(--mw-content-padding-top) * -1) calc(var(--mw-content-padding-x) * -1)
     24px;
+  padding-right: 0;
+}
+
+.milkdown .milkdown-top-bar .top-bar-inner {
+  width: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.milkdown .milkdown-top-bar > .toolbar {
+  flex: 0 0 auto;
 }
 
 .milkdown .ProseMirror p,
