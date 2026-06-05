@@ -19,3 +19,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## Third-Party Dependencies
+
+This project uses the following open-source libraries:
+
+* **Milkdown** (https://milkdown.dev/) — Markdown editor framework
+* **Crepe** (https://crepe.js.org/) — Design system and components
+* **Mermaid** (https://mermaid.js.org/) — Diagram rendering
+* **js-yaml** (https://github.com/nodeca/js-yaml) — YAML parsing for frontmatter
+
+Please refer to each project's respective license for their terms.
