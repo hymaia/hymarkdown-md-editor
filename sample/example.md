@@ -11,6 +11,8 @@ tags:
 
 This file exercises Markdown, inline emphasis, strikethrough, inline code, inline links, and GitHub-flavored Markdown.
 
+![1.00](hymaia.png)
+
 ## Headings
 
 #### Heading level 4

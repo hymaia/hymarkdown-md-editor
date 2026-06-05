@@ -2,6 +2,8 @@
 
 **Notion-like editing for Markdown files.** Write visually with rich formatting, live preview, and structured editing—then save as plain Markdown. No lock-in, no proprietary formats, everything stays on your filesystem.
 
+![1.00](preview.gif)
+
 ## Features
 
 * **Notion-style editing** — Rich WYSIWYG interface with visual blocks, drag-to-reorder, inline formatting, and a clean toolbar
