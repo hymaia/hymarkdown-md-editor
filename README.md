@@ -41,6 +41,10 @@ That's it. The file stays as plain Markdown.
 
 * [js-yaml](https://github.com/nodeca/js-yaml) — YAML parsing for frontmatter
 
+### Built by
+
+![1.00](hymaia.png)
+
 ## License
 
 MIT

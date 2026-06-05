@@ -679,6 +679,11 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
   margin-bottom: 0.8em;
 }
 
+.milkdown .ProseMirror li,
+.milkdown .ProseMirror li p {
+  margin-bottom: 0;
+}
+
 .milkdown .ProseMirror h1,
 .milkdown .ProseMirror h2,
 .milkdown .ProseMirror h3,
