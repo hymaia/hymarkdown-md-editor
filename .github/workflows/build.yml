@@ -38,3 +38,7 @@ jobs:
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to VS Code Marketplace
+        run: npx vsce publish --pat ${{ secrets.VSCE_PAT }}
+        if: secrets.VSCE_PAT != ''
