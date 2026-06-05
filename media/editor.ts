@@ -6,7 +6,7 @@ import * as coreModule from "@milkdown/core";
 import { TextSelection } from "@milkdown/kit/prose/state";
 import * as commonmarkModule from "@milkdown/preset-commonmark";
 import mermaid from "mermaid";
-import { aiSkillsMetadataPlugin } from "./milkdown-frontmatter";
+import { frontmatterMetadataPlugin } from "./milkdown-frontmatter";
 
 type VsCodeApi = {
   postMessage(message: unknown): void;
@@ -555,7 +555,7 @@ async function applyMarkdown(markdown: string): Promise<void> {
         }
       }));
     })
-    .use(aiSkillsMetadataPlugin);
+    .use(frontmatterMetadataPlugin);
 
   editor.on(listener => {
     listener.markdownUpdated((_ctx, markdownValue) => {

@@ -1,10 +1,10 @@
 {
-  "name": "markdown-wysiwyg-editor",
-  "displayName": "Markdown WYSIWYG Editor",
-  "description": "Editable WYSIWYG-style custom editor for Markdown files.",
+  "name": "hymarkdown",
+  "displayName": "Hymarkdown",
+  "description": "Rich-text WYSIWYG editor for Markdown files — write visually, save as plain Markdown.",
   "version": "0.0.1",
   "publisher": "local",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.86.0"
   },
@@ -19,7 +19,7 @@
     "customEditors": [
       {
         "viewType": "markdownWysiwyg.editor",
-        "displayName": "Markdown WYSIWYG",
+        "displayName": "Hymarkdown",
         "selector": [
           {
             "filenamePattern": "*.md"
@@ -34,11 +34,11 @@
     "commands": [
       {
         "command": "markdownWysiwyg.open",
-        "title": "Markdown WYSIWYG: Open Editor"
+        "title": "Hymarkdown: Open Editor"
       }
     ],
     "configuration": {
-      "title": "Markdown WYSIWYG",
+      "title": "Hymarkdown",
       "properties": {
         "markdownWysiwyg.themePath": {
           "type": "string",
@@ -85,15 +85,18 @@
     "@types/vscode": "^1.86.0",
     "@vscode/vsce": "^3.6.3",
     "esbuild": "^0.27.0",
+    "knip": "^6.15.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {
     "@milkdown/components": "^7.21.2",
+    "@milkdown/core": "^7.21.2",
     "@milkdown/crepe": "^7.21.2",
     "@milkdown/kit": "^7.21.2",
+    "@milkdown/preset-commonmark": "^7.21.2",
+    "@milkdown/prose": "^7.21.2",
     "@milkdown/utils": "^7.21.2",
     "js-yaml": "^4.2.0",
-    "katex": "^0.17.0",
     "mermaid": "^11.15.0",
     "remark-frontmatter": "^5.0.0"
   }

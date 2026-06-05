@@ -20,13 +20,13 @@ type MilkdownUtilsWithInternalExports = typeof milkdownUtils & {
 const { $nodeSchema, $remark, $view } =
   milkdownUtils as MilkdownUtilsWithInternalExports;
 
-export const remarkFrontmatterPlugin = $remark("remarkFrontmatter", () => {
+const remarkFrontmatterPlugin = $remark("remarkFrontmatter", () => {
   return function remarkFrontmatterRunner(this: unknown) {
     return remarkFrontmatter.call(this, ["yaml"]);
   };
 });
 
-export const aiSkillsMetadataSchema = $nodeSchema("aiSkillsMetadata", () => ({
+const frontmatterMetadataSchema = $nodeSchema("frontmatterMetadata", () => ({
   group: "block",
   atom: true,
   isolating: true,
@@ -54,7 +54,7 @@ export const aiSkillsMetadataSchema = $nodeSchema("aiSkillsMetadata", () => ({
     }
   },
   toMarkdown: {
-    match: (node: { type: { name: string } }) => node.type.name === "aiSkillsMetadata",
+    match: (node: { type: { name: string } }) => node.type.name === "frontmatterMetadata",
     runner: (
       state: { addNode: (type: string, attrs: unknown, value: string) => void },
       node: { attrs: { rawYaml: string } }
@@ -64,17 +64,17 @@ export const aiSkillsMetadataSchema = $nodeSchema("aiSkillsMetadata", () => ({
   },
   parseDOM: [
     {
-      tag: 'div[data-type="ai-skills-metadata"]',
+      tag: 'div[data-type="frontmatter-metadata"]',
       getAttrs: () => ({})
     }
   ],
-  toDOM: () => ["div", { "data-type": "ai-skills-metadata" }, "Frontmatter"]
+  toDOM: () => ["div", { "data-type": "frontmatter-metadata" }, "Frontmatter"]
 }));
 
-export const aiSkillsMetadataView = $view(aiSkillsMetadataSchema.node, () => {
+const frontmatterMetadataView = $view(frontmatterMetadataSchema.node, () => {
   return (node, view, getPos) => {
     const dom = document.createElement("section");
-    dom.setAttribute("data-type", "ai-skills-metadata");
+    dom.setAttribute("data-type", "frontmatter-metadata");
     dom.setAttribute("draggable", "false");
     dom.className = "frontmatter-panel";
     dom.addEventListener("dragstart", event => {
@@ -389,7 +389,7 @@ export const aiSkillsMetadataView = $view(aiSkillsMetadataSchema.node, () => {
     return {
       dom,
       update: updatedNode => {
-        if (updatedNode.type.name !== "aiSkillsMetadata") {
+        if (updatedNode.type.name !== "frontmatterMetadata") {
           return false;
         }
         node = updatedNode;
@@ -468,10 +468,10 @@ function stringifyValue(value: unknown): string {
   return String(value);
 }
 
-export const aiSkillsMetadataPlugin = [
+export const frontmatterMetadataPlugin = [
   remarkFrontmatterPlugin,
-  aiSkillsMetadataSchema,
-  aiSkillsMetadataView
+  frontmatterMetadataSchema,
+  frontmatterMetadataView
 ];
 
 const trashIconSvg = `

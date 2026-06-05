@@ -1,0 +1,6 @@
+{
+  "entry": [
+    "src/extension.ts",
+    "media/editor.ts"
+  ]
+}
