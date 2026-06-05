@@ -671,6 +671,10 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
   font-size: 85%;
 }
 
+.milkdown .milkdown-code-block .cm-editor {
+  font-size: 85%;
+}
+
 .milkdown .ProseMirror p {
   margin-bottom: 0.8em;
 }
