@@ -770,12 +770,12 @@ function findListContext($from: ListSelection): ListContext {
 }
 
 function attachToolbarToTopBar(): void {
-  const topBar = document.querySelector(".milkdown-top-bar");
-  if (!topBar || toolbarElement.parentElement === topBar) {
+  const topBarInner = document.querySelector(".milkdown-top-bar .top-bar-inner");
+  if (!topBarInner || toolbarElement.parentElement === topBarInner) {
     return;
   }
 
-  topBar.append(toolbarElement);
+  topBarInner.append(toolbarElement);
 }
 
 function getBlockHandlePosition({

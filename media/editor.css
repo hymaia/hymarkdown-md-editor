@@ -126,8 +126,7 @@ body {
 }
 
 .status {
-  margin-left: auto;
-  min-width: 88px;
+  flex: 1 1 auto;
   color: var(--mw-fg-faint);
   font-size: 12px;
   text-align: right;
@@ -202,20 +201,20 @@ body {
   min-width: 0;
 }
 
-.milkdown .milkdown-top-bar > .toolbar {
-  flex: 0 0 auto;
-}
-
 .milkdown .milkdown-top-bar {
   color: var(--crepe-color-on-surface);
   font-family: var(--mw-font-family);
   font-size: inherit;
 }
 
+.milkdown .milkdown-top-bar .top-bar-inner > .toolbar {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
 .milkdown .milkdown-top-bar .top-bar-heading-button .top-bar-heading-label,
 .milkdown .milkdown-top-bar .top-bar-heading-option,
-.milkdown .milkdown-top-bar > .toolbar button,
-.milkdown .milkdown-top-bar > .toolbar .status {
+.milkdown .milkdown-top-bar .top-bar-inner > .toolbar button {
   color: var(--crepe-color-on-surface);
   font-family: var(--mw-font-family);
   font-size: inherit;
@@ -223,6 +222,10 @@ body {
   font-weight: 400;
   line-height: 20px;
   letter-spacing: normal;
+}
+
+.milkdown .milkdown-top-bar .top-bar-inner > .toolbar .status {
+  color: color-mix(in srgb, var(--crepe-color-on-surface), transparent 55%);
 }
 
 .milkdown .milkdown-top-bar .top-bar-heading-button {
@@ -236,12 +239,12 @@ body {
 
 .milkdown .milkdown-top-bar .top-bar-item svg,
 .milkdown .milkdown-top-bar .top-bar-heading-button .top-bar-chevron svg,
-.milkdown .milkdown-top-bar > .toolbar .toolbar-icon {
+.milkdown .milkdown-top-bar .top-bar-inner > .toolbar .toolbar-icon {
   color: var(--crepe-color-on-surface);
 }
 
 .milkdown .milkdown-top-bar .top-bar-item svg,
-.milkdown .milkdown-top-bar > .toolbar .toolbar-icon {
+.milkdown .milkdown-top-bar .top-bar-inner > .toolbar .toolbar-icon {
   fill: var(--crepe-color-on-surface);
 }
 
