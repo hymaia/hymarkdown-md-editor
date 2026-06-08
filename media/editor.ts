@@ -568,7 +568,7 @@ async function applyMarkdown(markdown: string): Promise<void> {
     });
     listener.mounted(() => {
       isApplyingExternalChange = false;
-      setStatus("Loaded");
+      setStatus("");
       attachBlockHandleActions();
     });
   });
@@ -602,13 +602,13 @@ function emitChangeNow(): void {
   window.clearTimeout(emitTimer);
   const markdown = normalizeMarkdown(editor.getMarkdown());
   if (markdown === currentMarkdown) {
-    setStatus("Saved");
+    setStatus("");
     return;
   }
 
   currentMarkdown = markdown;
   vscode.postMessage({ type: "updateMarkdown", markdown });
-  setStatus("Saved");
+  setStatus("");
 }
 
 function normalizeMarkdown(markdown: string): string {
