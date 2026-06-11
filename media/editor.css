@@ -28,6 +28,14 @@
   --mw-code-block-secondary: #cfcfcf;
   --mw-code-block-hover: #e0e0e0;
   --mw-code-block-selected: #d5d5d5;
+  --mw-code-syntax-keyword: #9333ea;
+  --mw-code-syntax-string: #0a7d33;
+  --mw-code-syntax-number: #c5601a;
+  --mw-code-syntax-function: #1f6feb;
+  --mw-code-syntax-type: #b5660b;
+  --mw-code-syntax-variable: #cf222e;
+  --mw-code-syntax-comment: var(--mw-fg-faint);
+  --mw-code-syntax-operator: var(--mw-code-block-fg-muted);
   --mw-quote-bg: rgba(55, 53, 47, 0.035);
   --mw-quote-border: rgba(55, 53, 47, 0.28);
   --mw-link: rgb(35, 131, 226);
@@ -63,6 +71,12 @@ body.vscode-high-contrast {
   --mw-code-block-secondary: rgb(55, 55, 55);
   --mw-code-block-hover: rgba(255, 255, 255, 0.08);
   --mw-code-block-selected: rgba(255, 255, 255, 0.14);
+  --mw-code-syntax-keyword: #c792ea;
+  --mw-code-syntax-string: #7ee787;
+  --mw-code-syntax-number: #ffb86c;
+  --mw-code-syntax-function: #82aaff;
+  --mw-code-syntax-type: #ffcb6b;
+  --mw-code-syntax-variable: #ff9492;
   --mw-quote-bg: rgba(255, 255, 255, 0.055);
   --mw-quote-border: rgba(255, 255, 255, 0.28);
   --mw-link: rgb(95, 168, 244);
@@ -942,6 +956,19 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
     --mw-content-padding-x: 0px;
     --mw-content-padding-top: 0px;
     --mw-content-padding-bottom: 0px;
+  }
+
+  /* Force the light syntax palette when printing so code stays legible on the
+     white page even if the editor is in dark mode. */
+  body {
+    --mw-code-syntax-keyword: #9333ea;
+    --mw-code-syntax-string: #0a7d33;
+    --mw-code-syntax-number: #c5601a;
+    --mw-code-syntax-function: #1f6feb;
+    --mw-code-syntax-type: #b5660b;
+    --mw-code-syntax-variable: #cf222e;
+    --mw-code-syntax-comment: #6b7280;
+    --mw-code-syntax-operator: #57534e;
   }
 
   html,

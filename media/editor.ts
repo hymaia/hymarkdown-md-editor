@@ -7,8 +7,27 @@ import { Plugin, PluginKey, TextSelection } from "@milkdown/kit/prose/state";
 import { DOMSerializer } from "@milkdown/kit/prose/model";
 import { Decoration, DecorationSet } from "@milkdown/kit/prose/view";
 import * as commonmarkModule from "@milkdown/preset-commonmark";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { tags as t } from "@lezer/highlight";
+import { basicSetup } from "codemirror";
+import { keymap } from "@codemirror/view";
+import { defaultKeymap, indentWithTab } from "@codemirror/commands";
 import mermaid from "mermaid";
 import { frontmatterMetadataPlugin } from "./milkdown-frontmatter";
+
+// Syntax colors resolve to CSS custom properties (defined in editor.css), so a
+// single style object re-themes itself when the light/dark vars swap — no need
+// for separate light and dark HighlightStyle instances.
+const codeHighlightStyle = HighlightStyle.define([
+  { tag: [t.keyword, t.modifier, t.controlKeyword, t.operatorKeyword], color: "var(--mw-code-syntax-keyword)" },
+  { tag: [t.string, t.special(t.string), t.regexp, t.escape], color: "var(--mw-code-syntax-string)" },
+  { tag: [t.number, t.bool, t.atom, t.null], color: "var(--mw-code-syntax-number)" },
+  { tag: [t.function(t.variableName), t.function(t.propertyName), t.labelName], color: "var(--mw-code-syntax-function)" },
+  { tag: [t.typeName, t.className, t.namespace, t.tagName], color: "var(--mw-code-syntax-type)" },
+  { tag: [t.propertyName, t.variableName, t.attributeName, t.definition(t.variableName)], color: "var(--mw-code-syntax-variable)" },
+  { tag: [t.comment, t.lineComment, t.blockComment, t.docComment], color: "var(--mw-code-syntax-comment)", fontStyle: "italic" },
+  { tag: [t.operator, t.punctuation, t.separator, t.bracket, t.derefOperator], color: "var(--mw-code-syntax-operator)" }
+]);
 
 type VsCodeApi = {
   postMessage(message: unknown): void;
@@ -632,6 +651,16 @@ async function applyMarkdown(markdown: string): Promise<void> {
       }));
       ctx.update<CodeBlockConfig>(codeBlockConfig.key, previous => ({
         ...previous,
+        // Crepe defaults the CodeMirror theme to One Dark, whose palette is
+        // tuned for a dark background and looks washed-out on our light/dark
+        // surfaces. Rebuild the extension list (keymap + basicSetup, same as
+        // Crepe) but swap One Dark for our CSS-variable-driven highlight style.
+        // languages stay on previous, so syntax parsing is unaffected.
+        extensions: [
+          keymap.of(defaultKeymap.concat(indentWithTab)),
+          basicSetup,
+          syntaxHighlighting(codeHighlightStyle)
+        ],
         renderPreview: (language, content, applyPreview) => {
           if (language.toLowerCase() !== "mermaid" || content.trim().length === 0) {
             return previous.renderPreview(language, content, applyPreview);
