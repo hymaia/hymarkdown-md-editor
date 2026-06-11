@@ -591,7 +591,7 @@ async function applyMarkdown(markdown: string): Promise<void> {
 
   editor = new Crepe({
     root: editorRoot,
-    defaultValue: markdown,
+    defaultValue: fileMarkdownToEditor(markdown),
     features: {
       [crepeModule.CrepeFeature.TopBar]: true,
       [crepeModule.CrepeFeature.AI]: false
@@ -747,7 +747,7 @@ function emitChangeNow(): void {
   }
 
   window.clearTimeout(emitTimer);
-  const markdown = normalizeMarkdown(editor.getMarkdown());
+  const markdown = normalizeMarkdown(editorMarkdownToFile(editor.getMarkdown()));
   if (markdown === currentMarkdown) {
     setStatus("");
     return;
@@ -761,6 +761,40 @@ function emitChangeNow(): void {
 
 function normalizeMarkdown(markdown: string): string {
   return markdown.trimEnd() + "\n";
+}
+
+// Milkdown's `image-block` node (used for any image that sits alone on a line)
+// has no Markdown slot for its resize ratio, so it stores the ratio in the
+// image's alt text and the caption in the title: `![1.00](src "caption")`.
+// That leaks "1.00" (the default ratio) into saved files. We translate at the
+// boundary so the file always uses standard `![caption](src)` and the editor
+// keeps the caption in the title slot. Inline images are left alone.
+const EDITOR_BLOCK_IMAGE =
+  /^([ \t]*)!\[(\d+(?:\.\d+)?)\]\(([^()\s]+)(?:\s+"((?:[^"\\]|\\.)*)")?\)[ \t]*$/gm;
+const FILE_BLOCK_IMAGE =
+  /^([ \t]*)!\[((?:[^\]\\]|\\.)*)\]\(([^()\s]+)(?:\s+"((?:[^"\\]|\\.)*)")?\)[ \t]*$/gm;
+
+// Editor output -> file: drop the ratio from alt, promote the caption to alt.
+function editorMarkdownToFile(markdown: string): string {
+  return markdown.replace(
+    EDITOR_BLOCK_IMAGE,
+    (_match, indent: string, _ratio: string, url: string, caption?: string) =>
+      `${indent}![${caption ?? ""}](${url})`
+  );
+}
+
+// File -> editor: move the alt text into the title slot so the image-block
+// shows it as a caption, leaving the alt slot empty (ratio defaults to 1).
+function fileMarkdownToEditor(markdown: string): string {
+  return markdown.replace(
+    FILE_BLOCK_IMAGE,
+    (_match, indent: string, alt: string, url: string, title?: string) => {
+      const caption = alt || title || "";
+      return caption
+        ? `${indent}![](${url} "${caption}")`
+        : `${indent}![](${url})`;
+    }
+  );
 }
 
 function setStatus(message: string): void {
