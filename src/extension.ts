@@ -1,11 +1,13 @@
 import * as path from "path";
+import * as os from "os";
 import * as vscode from "vscode";
 
 const viewType = "markdownWysiwyg.editor";
 
 type WebviewRequest =
   | { type: "uploadImage"; requestId: number; fileName: string; mimeType: string; dataUrl: string }
-  | { type: "resolveWebviewUrl"; requestId: number; url: string };
+  | { type: "resolveWebviewUrl"; requestId: number; url: string }
+  | { type: "print"; contentHtml: string };
 
 type WebviewResponse =
   | { type: "uploadImageResult"; requestId: number; markdownPath: string }
@@ -31,6 +33,15 @@ export function activate(context: vscode.ExtensionContext) {
       }
 
       await vscode.commands.executeCommand("vscode.openWith", uri, viewType);
+    }),
+    vscode.commands.registerCommand("markdownWysiwyg.find", async () => {
+      await provider.postToActivePanel({ type: "showFind", replace: false });
+    }),
+    vscode.commands.registerCommand("markdownWysiwyg.findReplace", async () => {
+      await provider.postToActivePanel({ type: "showFind", replace: true });
+    }),
+    vscode.commands.registerCommand("markdownWysiwyg.print", async () => {
+      await provider.postToActivePanel({ type: "print" });
     })
   );
 }
@@ -38,13 +49,30 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {}
 
 class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
+  private activePanel?: vscode.WebviewPanel;
+
   constructor(private readonly context: vscode.ExtensionContext) {}
+
+  async postToActivePanel(message: unknown): Promise<void> {
+    if (!this.activePanel) {
+      return;
+    }
+
+    await this.activePanel.webview.postMessage(message);
+  }
 
   resolveCustomTextEditor(
     document: vscode.TextDocument,
     webviewPanel: vscode.WebviewPanel,
     token: vscode.CancellationToken
   ): void {
+    this.activePanel = webviewPanel;
+    webviewPanel.onDidChangeViewState(event => {
+      if (event.webviewPanel.active) {
+        this.activePanel = event.webviewPanel;
+      }
+    });
+
     const render = () => {
       const themeUri = this.resolveThemeUri(document.uri);
       const documentRoot = this.resolveDocumentRoot(document.uri);
@@ -118,6 +146,11 @@ class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
         return;
       }
 
+      if (message?.type === "print" && typeof message.contentHtml === "string") {
+        await this.handlePrintRequest(document, message.contentHtml);
+        return;
+      }
+
       if (message?.type === "uploadImage") {
         await this.handleUploadImageRequest(webviewPanel.webview, document, message as WebviewRequest);
         return;
@@ -147,6 +180,9 @@ class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
       documentListener.dispose();
       messageListener.dispose();
       configListener.dispose();
+      if (this.activePanel === webviewPanel) {
+        this.activePanel = undefined;
+      }
     });
 
     postDocument();
@@ -260,6 +296,52 @@ class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
     }
 
     return vscode.Uri.file(path.dirname(documentUri.fsPath));
+  }
+
+  private async handlePrintRequest(document: vscode.TextDocument, contentHtml: string): Promise<void> {
+    const printDir = vscode.Uri.file(path.join(os.tmpdir(), "hymarkdown-print"));
+    await vscode.workspace.fs.createDirectory(printDir);
+
+    const baseName = sanitizeFileName(path.basename(document.uri.fsPath || "document.md", path.extname(document.uri.fsPath))) || "document";
+    const targetUri = vscode.Uri.joinPath(printDir, `${baseName}-${Date.now()}.html`);
+    const html = this.getPrintHtml(document.uri, contentHtml);
+    await vscode.workspace.fs.writeFile(targetUri, Buffer.from(html, "utf8"));
+    await vscode.env.openExternal(targetUri);
+  }
+
+  private getPrintHtml(documentUri: vscode.Uri, contentHtml: string): string {
+    const distStyleUri = vscode.Uri.joinPath(this.context.extensionUri, "dist", "editor.css");
+    const editorStyleUri = vscode.Uri.joinPath(this.context.extensionUri, "media", "editor.css");
+    const katexStyleUri = vscode.Uri.joinPath(this.context.extensionUri, "media", "katex", "katex.min.css");
+    const themeUri = this.resolveThemeUri(documentUri);
+    const themeLink = themeUri ? `\n  <link href="${escapeHtml(themeUri.toString())}" rel="stylesheet">` : "";
+    const baseFontSize = this.resolveBaseFontSize(documentUri);
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1000">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&family=Domine:wght@400..700&display=swap" rel="stylesheet">
+  <link href="${escapeHtml(katexStyleUri.toString())}" rel="stylesheet">
+  <link href="${escapeHtml(distStyleUri.toString())}" rel="stylesheet">
+  <link href="${escapeHtml(editorStyleUri.toString())}" rel="stylesheet">
+  <style>:root { --mw-base-font-size: ${baseFontSize}px; }</style>${themeLink}
+  <title>Print Markdown</title>
+  <script>
+    window.addEventListener("load", () => {
+      window.setTimeout(() => window.print(), 250);
+    });
+  </script>
+</head>
+<body>
+  <div id="root">
+${contentHtml}
+  </div>
+</body>
+</html>`;
   }
 
   private async handleUploadImageRequest(

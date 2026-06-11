@@ -3,7 +3,8 @@ import "@milkdown/crepe/theme/common/style.css";
 import "@milkdown/crepe/theme/frame.css";
 import * as codeBlockModule from "@milkdown/components/code-block";
 import * as coreModule from "@milkdown/core";
-import { TextSelection } from "@milkdown/kit/prose/state";
+import { Plugin, PluginKey, TextSelection } from "@milkdown/kit/prose/state";
+import { Decoration, DecorationSet } from "@milkdown/kit/prose/view";
 import * as commonmarkModule from "@milkdown/preset-commonmark";
 import mermaid from "mermaid";
 import { frontmatterMetadataPlugin } from "./milkdown-frontmatter";
@@ -14,6 +15,8 @@ type VsCodeApi = {
 
 type IncomingMessage =
   | { type: "setMarkdown"; markdown: string }
+  | { type: "showFind"; replace: boolean }
+  | { type: "print" }
   | { type: "uploadImageResult"; requestId: number; markdownPath: string }
   | { type: "uploadImageError"; requestId: number; error: string }
   | { type: "resolveWebviewUrlResult"; requestId: number; url: string }
@@ -24,6 +27,7 @@ type OutgoingMessage =
   | { type: "ready" }
   | { type: "openSource" }
   | { type: "openSettings" }
+  | { type: "print"; contentHtml: string }
   | { type: "updateMarkdown"; markdown: string }
   | { type: "uploadImage"; requestId: number; fileName: string; mimeType: string; dataUrl: string }
   | { type: "resolveWebviewUrl"; requestId: number; url: string };
@@ -95,6 +99,7 @@ type ListKind = "bullet" | "ordered" | "task";
 type ListItemNode = {
   type: { name: string };
   attrs: Record<string, unknown>;
+  nodeSize: number;
   forEach(callback: (node: ListItemNode, offset: number, index: number) => void): void;
 };
 type ListContext = {
@@ -127,12 +132,7 @@ type EditorView = {
     selection: {
       $from: ListSelection;
     };
-    tr: {
-      delete(from: number, to: number): EditorTransaction;
-      replaceWith(from: number, to: number, node: unknown): EditorTransaction;
-      setNodeMarkup(pos: number, type?: unknown, attrs?: Record<string, unknown>): EditorTransaction;
-      scrollIntoView(): EditorTransaction;
-    };
+    tr: EditorTransaction;
   };
   dispatch(transaction: EditorTransaction): void;
   focus(): void;
@@ -142,10 +142,22 @@ type EditorDoc = {
     size: number;
   };
   resolve(pos: number): ListSelection;
+  descendants(callback: (node: ProseMirrorNode, pos: number) => boolean | void): void;
+};
+type ProseMirrorNode = {
+  isText?: boolean;
+  text?: string;
+  nodeSize: number;
 };
 type EditorTransaction = {
   doc: EditorDoc;
+  delete(from: number, to: number): EditorTransaction;
+  insert(from: number, content: unknown): EditorTransaction;
+  insertText(text: string, from: number, to: number): EditorTransaction;
+  replaceWith(from: number, to: number, node: unknown): EditorTransaction;
   setSelection(selection: unknown): EditorTransaction;
+  setMeta(key: unknown, value: unknown): EditorTransaction;
+  setNodeMarkup(pos: number, type?: unknown, attrs?: Record<string, unknown>): EditorTransaction;
   scrollIntoView(): EditorTransaction;
 };
 type ListSelection = {
@@ -171,6 +183,21 @@ type ActiveBlockHandleTarget = {
   ctx: unknown;
   pos: number;
   nodeSize: number;
+};
+type SearchMatch = {
+  from: number;
+  to: number;
+};
+type SearchDecorationState = {
+  matches: SearchMatch[];
+  activeIndex: number;
+};
+type FindWidgetElements = {
+  root: HTMLElement;
+  searchInput: HTMLInputElement;
+  replaceInput: HTMLInputElement;
+  replaceRow: HTMLElement;
+  count: HTMLElement;
 };
 
 const bulletListIcon = `
@@ -283,6 +310,7 @@ const trashIconSvg = `
 const milkdownCore = coreModule as unknown as {
   commandsCtx: unknown;
   editorViewCtx: unknown;
+  prosePluginsCtx: unknown;
 };
 const milkdownCommonmark = commonmarkModule as unknown as {
   bulletListSchema: { type(ctx: unknown): unknown };
@@ -301,6 +329,35 @@ const { codeBlockConfig } = codeBlockModule as typeof codeBlockModule & {
 const editorRoot: HTMLElement = root;
 const statusElement: HTMLElement = status;
 const toolbarElement: HTMLElement = toolbar as HTMLElement;
+const searchPluginKey = new PluginKey<SearchDecorationState>("MW_SEARCH_HIGHLIGHT");
+const searchHighlightPlugin = new Plugin<SearchDecorationState>({
+  key: searchPluginKey,
+  state: {
+    init: () => ({ matches: [], activeIndex: -1 }),
+    apply: (transaction, previous) =>
+      (transaction.getMeta(searchPluginKey) as SearchDecorationState | undefined) ?? previous
+  },
+  props: {
+    decorations(state) {
+      const searchState = searchPluginKey.getState(state);
+      if (!searchState?.matches.length) {
+        return DecorationSet.empty;
+      }
+
+      return DecorationSet.create(
+        state.doc,
+        searchState.matches.map((match, index) =>
+          Decoration.inline(match.from, match.to, {
+            class:
+              index === searchState.activeIndex
+                ? "mw-search-match mw-search-match-active"
+                : "mw-search-match"
+          })
+        )
+      );
+    }
+  }
+});
 
 let editor: InstanceType<CrepeConstructor> | undefined;
 let currentMarkdown = "";
@@ -310,6 +367,10 @@ let mermaidRenderId = 0;
 let nextRequestId = 1;
 let activeBlockHandleTarget: ActiveBlockHandleTarget | undefined;
 let blockHandleActionsVisible = false;
+let currentEditorContext: EditorContext | undefined;
+let searchMatches: SearchMatch[] = [];
+let activeSearchMatchIndex = -1;
+let findWidgetElements: FindWidgetElements | undefined;
 
 const pendingRequests = new Map<
   number,
@@ -332,6 +393,11 @@ toolbarElement.addEventListener("click", event => {
   }
 
   const action = button.dataset.action;
+  if (action === "print") {
+    printRenderedDocument();
+    return;
+  }
+
   if (action === "open-source") {
     emitChangeNow();
     vscode.postMessage({ type: "openSource" });
@@ -394,8 +460,38 @@ window.addEventListener("pointerup", clearTextSelectionDragState, true);
 window.addEventListener("pointercancel", clearTextSelectionDragState, true);
 window.addEventListener("blur", clearTextSelectionDragState);
 
+window.addEventListener("keydown", event => {
+  const modifier = event.metaKey || event.ctrlKey;
+  if (!modifier) {
+    return;
+  }
+
+  if (event.key.toLowerCase() === "f") {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleFindWidget(event.altKey);
+    return;
+  }
+
+  if (event.key.toLowerCase() === "p" && !event.shiftKey) {
+    event.preventDefault();
+    event.stopPropagation();
+    printRenderedDocument();
+  }
+}, true);
+
 window.addEventListener("message", event => {
   const message = event.data as IncomingMessage;
+  if (message.type === "showFind") {
+    showFindWidget(Boolean(message.replace));
+    return;
+  }
+
+  if (message.type === "print") {
+    printRenderedDocument();
+    return;
+  }
+
   if (message.type !== "setMarkdown" || typeof message.markdown !== "string") {
     if (
       message.type === "uploadImageResult" &&
@@ -494,6 +590,11 @@ async function applyMarkdown(markdown: string): Promise<void> {
 
   editor.editor
     .config(ctx => {
+      currentEditorContext = ctx as unknown as EditorContext;
+      ctx.update<unknown[]>(milkdownCore.prosePluginsCtx, previous => [
+        ...previous,
+        searchHighlightPlugin
+      ]);
       ctx.update<UploadOptions>("uploadConfig", (previous: UploadOptions) => ({
         ...previous,
         uploader: async (files, schema) => {
@@ -570,6 +671,7 @@ async function applyMarkdown(markdown: string): Promise<void> {
       isApplyingExternalChange = false;
       setStatus("");
       attachBlockHandleActions();
+      refreshSearchResults();
     });
   });
 
@@ -577,6 +679,7 @@ async function applyMarkdown(markdown: string): Promise<void> {
     await editor.create();
     attachToolbarToTopBar();
     attachBlockHandleActions();
+    ensureFindWidget();
   } catch (error) {
     isApplyingExternalChange = false;
     setStatus("Failed to load");
@@ -608,6 +711,7 @@ function emitChangeNow(): void {
 
   currentMarkdown = markdown;
   vscode.postMessage({ type: "updateMarkdown", markdown });
+  refreshSearchResults();
   setStatus("");
 }
 
@@ -776,6 +880,25 @@ function attachToolbarToTopBar(): void {
   }
 
   topBarInner.append(toolbarElement);
+  ensureToolbarPrintButton();
+}
+
+function ensureToolbarPrintButton(): void {
+  if (toolbarElement.querySelector('[data-action="print"]')) {
+    return;
+  }
+
+  const printButton = document.createElement("button");
+  printButton.type = "button";
+  printButton.dataset.action = "print";
+  printButton.title = "Print";
+  printButton.setAttribute("aria-label", "Print");
+  printButton.innerHTML = `
+    <svg class="toolbar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+      <path d="M7 3H17V8H7V3ZM6 9H18C19.66 9 21 10.34 21 12V17H17V21H7V17H3V12C3 10.34 4.34 9 6 9ZM9 19H15V15H9V19ZM6 11C5.45 11 5 11.45 5 12C5 12.55 5.45 13 6 13C6.55 13 7 12.55 7 12C7 11.45 6.55 11 6 11Z"/>
+    </svg>
+  `;
+  toolbarElement.prepend(printButton);
 }
 
 function getBlockHandlePosition({
@@ -899,6 +1022,284 @@ function deleteActiveBlock(): void {
   activeBlockHandleTarget = undefined;
   hideBlockHandleActions();
   emitChangeSoon();
+}
+
+function ensureFindWidget(): FindWidgetElements {
+  if (findWidgetElements) {
+    return findWidgetElements;
+  }
+
+  const widget = document.createElement("section");
+  widget.className = "mw-find-widget";
+  widget.dataset.open = "false";
+  widget.dataset.replace = "false";
+  widget.setAttribute("aria-label", "Find and replace");
+
+  const findRow = document.createElement("div");
+  findRow.className = "mw-find-row";
+
+  const searchInput = document.createElement("input");
+  searchInput.type = "text";
+  searchInput.className = "mw-find-input";
+  searchInput.placeholder = "Find";
+  searchInput.spellcheck = false;
+  searchInput.setAttribute("aria-label", "Find");
+
+  const count = document.createElement("span");
+  count.className = "mw-find-count";
+  count.textContent = "No results";
+
+  const previousButton = createFindButton("Previous match", "↑");
+  previousButton.addEventListener("click", () => selectSearchMatch(activeSearchMatchIndex - 1));
+
+  const nextButton = createFindButton("Next match", "↓");
+  nextButton.addEventListener("click", () => selectSearchMatch(activeSearchMatchIndex + 1));
+
+  const toggleReplaceButton = createFindButton("Toggle replace", "≡");
+  toggleReplaceButton.addEventListener("click", () => {
+    widget.dataset.replace = widget.dataset.replace === "true" ? "false" : "true";
+    if (widget.dataset.replace === "true") {
+      elements.replaceInput.focus();
+    } else {
+      searchInput.focus();
+    }
+  });
+
+  const closeButton = createFindButton("Close find", "×");
+  closeButton.addEventListener("click", () => hideFindWidget());
+
+  findRow.append(searchInput, count, previousButton, nextButton, toggleReplaceButton, closeButton);
+
+  const replaceRow = document.createElement("div");
+  replaceRow.className = "mw-find-row mw-replace-row";
+
+  const replaceInput = document.createElement("input");
+  replaceInput.type = "text";
+  replaceInput.className = "mw-find-input";
+  replaceInput.placeholder = "Replace";
+  replaceInput.spellcheck = false;
+  replaceInput.setAttribute("aria-label", "Replace");
+
+  const replaceButton = createFindButton("Replace", "Replace");
+  replaceButton.classList.add("mw-find-text-button");
+  replaceButton.addEventListener("click", replaceCurrentMatch);
+
+  const replaceAllButton = createFindButton("Replace all", "All");
+  replaceAllButton.classList.add("mw-find-text-button");
+  replaceAllButton.addEventListener("click", replaceAllMatches);
+
+  replaceRow.append(replaceInput, replaceButton, replaceAllButton);
+  widget.append(findRow, replaceRow);
+  document.body.appendChild(widget);
+
+  const elements: FindWidgetElements = { root: widget, searchInput, replaceInput, replaceRow, count };
+  findWidgetElements = elements;
+
+  searchInput.addEventListener("input", () => {
+    refreshSearchResults();
+    selectSearchMatch(0);
+  });
+
+  widget.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      hideFindWidget();
+      focusEditor();
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (event.shiftKey) {
+        selectSearchMatch(activeSearchMatchIndex - 1);
+      } else {
+        selectSearchMatch(activeSearchMatchIndex + 1);
+      }
+    }
+  });
+
+  return elements;
+}
+
+function createFindButton(label: string, text: string): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "mw-find-button";
+  button.setAttribute("aria-label", label);
+  button.title = label;
+  button.textContent = text;
+  return button;
+}
+
+function toggleFindWidget(showReplace: boolean): void {
+  if (findWidgetElements?.root.dataset.open === "true") {
+    hideFindWidget();
+    focusEditor();
+    return;
+  }
+
+  showFindWidget(showReplace);
+}
+
+function showFindWidget(showReplace: boolean): void {
+  const elements = ensureFindWidget();
+  elements.root.dataset.open = "true";
+  elements.root.dataset.replace = showReplace ? "true" : "false";
+  refreshSearchResults();
+  window.requestAnimationFrame(() => {
+    elements.searchInput.focus();
+    elements.searchInput.select();
+  });
+}
+
+function hideFindWidget(): void {
+  const elements = ensureFindWidget();
+  elements.root.dataset.open = "false";
+  searchMatches = [];
+  activeSearchMatchIndex = -1;
+  updateSearchDecorations();
+}
+
+function refreshSearchResults(): void {
+  if (!findWidgetElements || findWidgetElements.root.dataset.open !== "true") {
+    searchMatches = [];
+    activeSearchMatchIndex = -1;
+    updateSearchDecorations();
+    return;
+  }
+
+  const query = findWidgetElements.searchInput.value;
+  searchMatches = query ? collectSearchMatches(query) : [];
+  if (searchMatches.length === 0) {
+    activeSearchMatchIndex = -1;
+    findWidgetElements.count.textContent = query ? "No results" : "";
+    updateSearchDecorations();
+    return;
+  }
+
+  if (activeSearchMatchIndex < 0 || activeSearchMatchIndex >= searchMatches.length) {
+    activeSearchMatchIndex = 0;
+  }
+  findWidgetElements.count.textContent = `${activeSearchMatchIndex + 1} of ${searchMatches.length}`;
+  updateSearchDecorations();
+}
+
+function collectSearchMatches(query: string): SearchMatch[] {
+  const context = currentEditorContext;
+  if (!context) {
+    return [];
+  }
+
+  const view = context.get<EditorView>(milkdownCore.editorViewCtx);
+  const needle = query.toLocaleLowerCase();
+  const matches: SearchMatch[] = [];
+  view.state.doc.descendants((node, pos) => {
+    if (!node.isText || !node.text) {
+      return;
+    }
+
+    const haystack = node.text.toLocaleLowerCase();
+    let offset = haystack.indexOf(needle);
+    while (offset >= 0) {
+      matches.push({
+        from: pos + offset,
+        to: pos + offset + query.length
+      });
+      offset = haystack.indexOf(needle, offset + Math.max(1, query.length));
+    }
+  });
+  return matches;
+}
+
+function selectSearchMatch(index: number): void {
+  refreshSearchResults();
+  if (!searchMatches.length || !currentEditorContext) {
+    return;
+  }
+
+  activeSearchMatchIndex = (index + searchMatches.length) % searchMatches.length;
+  const match = searchMatches[activeSearchMatchIndex];
+  const view = currentEditorContext.get<EditorView>(milkdownCore.editorViewCtx);
+  const selection = TextSelection.create(
+    view.state.doc as never,
+    match.from,
+    match.to
+  );
+  view.dispatch(view.state.tr.setSelection(selection).scrollIntoView());
+  updateSearchDecorations();
+  findWidgetElements!.count.textContent = `${activeSearchMatchIndex + 1} of ${searchMatches.length}`;
+}
+
+function replaceCurrentMatch(): void {
+  if (!findWidgetElements || !currentEditorContext) {
+    return;
+  }
+
+  refreshSearchResults();
+  if (!searchMatches.length || activeSearchMatchIndex < 0) {
+    return;
+  }
+
+  const replacement = findWidgetElements.replaceInput.value;
+  const match = searchMatches[activeSearchMatchIndex];
+  const view = currentEditorContext.get<EditorView>(milkdownCore.editorViewCtx);
+  view.dispatch(view.state.tr.insertText(replacement, match.from, match.to).scrollIntoView());
+  emitChangeSoon();
+  refreshSearchResults();
+  selectSearchMatch(activeSearchMatchIndex);
+}
+
+function replaceAllMatches(): void {
+  if (!findWidgetElements || !currentEditorContext) {
+    return;
+  }
+
+  refreshSearchResults();
+  if (!searchMatches.length) {
+    return;
+  }
+
+  const replacement = findWidgetElements.replaceInput.value;
+  const view = currentEditorContext.get<EditorView>(milkdownCore.editorViewCtx);
+  let tr = view.state.tr;
+  for (let index = searchMatches.length - 1; index >= 0; index -= 1) {
+    const match = searchMatches[index];
+    tr = tr.insertText(replacement, match.from, match.to);
+  }
+  view.dispatch(tr.scrollIntoView());
+  emitChangeSoon();
+  refreshSearchResults();
+}
+
+function printRenderedDocument(): void {
+  emitChangeNow();
+  vscode.postMessage({
+    type: "print",
+    contentHtml: createPrintableContentHtml()
+  } satisfies OutgoingMessage);
+}
+
+function updateSearchDecorations(): void {
+  if (!currentEditorContext) {
+    return;
+  }
+
+  const view = currentEditorContext.get<EditorView>(milkdownCore.editorViewCtx);
+  view.dispatch(
+    view.state.tr.setMeta(searchPluginKey, {
+      matches: searchMatches,
+      activeIndex: activeSearchMatchIndex
+    } satisfies SearchDecorationState)
+  );
+}
+
+function createPrintableContentHtml(): string {
+  const editorElement = editorRoot.querySelector<HTMLElement>(".editor") ?? editorRoot;
+  return editorElement.outerHTML;
+}
+
+function focusEditor(): void {
+  currentEditorContext?.get<EditorView>(milkdownCore.editorViewCtx).focus();
 }
 
 async function uploadImageFile(file: File): Promise<string> {

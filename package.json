@@ -39,6 +39,38 @@
       {
         "command": "markdownWysiwyg.open",
         "title": "Hymarkdown: Open Editor"
+      },
+      {
+        "command": "markdownWysiwyg.find",
+        "title": "Hymarkdown: Find"
+      },
+      {
+        "command": "markdownWysiwyg.findReplace",
+        "title": "Hymarkdown: Find and Replace"
+      },
+      {
+        "command": "markdownWysiwyg.print",
+        "title": "Hymarkdown: Print"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "markdownWysiwyg.find",
+        "key": "ctrl+f",
+        "mac": "cmd+f",
+        "when": "activeCustomEditorId == markdownWysiwyg.editor"
+      },
+      {
+        "command": "markdownWysiwyg.findReplace",
+        "key": "ctrl+alt+f",
+        "mac": "cmd+alt+f",
+        "when": "activeCustomEditorId == markdownWysiwyg.editor"
+      },
+      {
+        "command": "markdownWysiwyg.print",
+        "key": "ctrl+p",
+        "mac": "cmd+p",
+        "when": "activeCustomEditorId == markdownWysiwyg.editor"
       }
     ],
     "configuration": {
