@@ -518,6 +518,12 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
 .milkdown .milkdown-table-block th,
 .milkdown .milkdown-table-block td {
   border-color: var(--mw-table-border);
+  vertical-align: middle;
+}
+
+.milkdown .milkdown-table-block th p,
+.milkdown .milkdown-table-block td p {
+  margin-bottom: 0;
 }
 
 .milkdown .milkdown-code-block {
