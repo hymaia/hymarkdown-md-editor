@@ -393,23 +393,22 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
 }
 
 .mw-find-row {
-  display: grid;
-  grid-template-columns: minmax(120px, 1fr) auto auto auto auto auto;
+  display: flex;
   align-items: center;
   gap: 4px;
 }
 
 .mw-replace-row {
   display: none;
-  grid-template-columns: minmax(120px, 1fr) auto auto;
   margin-top: 4px;
 }
 
 .mw-find-widget[data-replace="true"] .mw-replace-row {
-  display: grid;
+  display: flex;
 }
 
 .mw-find-input {
+  flex: 1 1 auto;
   min-width: 0;
   height: 28px;
   padding: 2px 8px;
@@ -454,6 +453,21 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
   color: var(--mw-fg);
   background: var(--mw-surface-hover);
   outline: none;
+}
+
+.mw-find-toggle {
+  flex: 0 0 auto;
+  font-size: 13px;
+}
+
+.mw-find-toggle-underline {
+  text-decoration: underline;
+}
+
+.mw-find-toggle.is-active {
+  color: var(--mw-fg);
+  border-color: var(--mw-focus);
+  background: var(--mw-surface-hover);
 }
 
 .milkdown .ProseMirror .mw-search-match {

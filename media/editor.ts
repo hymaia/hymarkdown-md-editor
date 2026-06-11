@@ -209,10 +209,18 @@ type ActiveBlockHandleTarget = {
 type SearchMatch = {
   from: number;
   to: number;
+  text: string;
+  groups: string[];
 };
 type SearchDecorationState = {
   matches: SearchMatch[];
   activeIndex: number;
+};
+type SearchOptions = {
+  matchCase: boolean;
+  wholeWord: boolean;
+  regex: boolean;
+  preserveCase: boolean;
 };
 type FindWidgetElements = {
   root: HTMLElement;
@@ -393,6 +401,12 @@ let currentEditorContext: EditorContext | undefined;
 let searchMatches: SearchMatch[] = [];
 let activeSearchMatchIndex = -1;
 let findWidgetElements: FindWidgetElements | undefined;
+const searchOptions: SearchOptions = {
+  matchCase: false,
+  wholeWord: false,
+  regex: false,
+  preserveCase: false
+};
 
 const pendingRequests = new Map<
   number,
@@ -1094,6 +1108,23 @@ function ensureFindWidget(): FindWidgetElements {
   searchInput.spellcheck = false;
   searchInput.setAttribute("aria-label", "Find");
 
+  const matchCaseToggle = createFindToggle("Match case", "Aa", active => {
+    searchOptions.matchCase = active;
+    refreshSearchResults();
+    selectSearchMatch(0);
+  });
+  const wholeWordToggle = createFindToggle("Match whole word", "ab", active => {
+    searchOptions.wholeWord = active;
+    refreshSearchResults();
+    selectSearchMatch(0);
+  });
+  wholeWordToggle.classList.add("mw-find-toggle-underline");
+  const regexToggle = createFindToggle("Use regular expression", ".*", active => {
+    searchOptions.regex = active;
+    refreshSearchResults();
+    selectSearchMatch(0);
+  });
+
   const count = document.createElement("span");
   count.className = "mw-find-count";
   count.textContent = "No results";
@@ -1117,7 +1148,17 @@ function ensureFindWidget(): FindWidgetElements {
   const closeButton = createFindButton("Close find", "×");
   closeButton.addEventListener("click", () => hideFindWidget());
 
-  findRow.append(searchInput, count, previousButton, nextButton, toggleReplaceButton, closeButton);
+  findRow.append(
+    searchInput,
+    matchCaseToggle,
+    wholeWordToggle,
+    regexToggle,
+    count,
+    previousButton,
+    nextButton,
+    toggleReplaceButton,
+    closeButton
+  );
 
   const replaceRow = document.createElement("div");
   replaceRow.className = "mw-find-row mw-replace-row";
@@ -1129,6 +1170,10 @@ function ensureFindWidget(): FindWidgetElements {
   replaceInput.spellcheck = false;
   replaceInput.setAttribute("aria-label", "Replace");
 
+  const preserveCaseToggle = createFindToggle("Preserve case", "AB", active => {
+    searchOptions.preserveCase = active;
+  });
+
   const replaceButton = createFindButton("Replace", "Replace");
   replaceButton.classList.add("mw-find-text-button");
   replaceButton.addEventListener("click", replaceCurrentMatch);
@@ -1137,7 +1182,7 @@ function ensureFindWidget(): FindWidgetElements {
   replaceAllButton.classList.add("mw-find-text-button");
   replaceAllButton.addEventListener("click", replaceAllMatches);
 
-  replaceRow.append(replaceInput, replaceButton, replaceAllButton);
+  replaceRow.append(replaceInput, preserveCaseToggle, replaceButton, replaceAllButton);
   widget.append(findRow, replaceRow);
   document.body.appendChild(widget);
 
@@ -1180,6 +1225,23 @@ function createFindButton(label: string, text: string): HTMLButtonElement {
   return button;
 }
 
+function createFindToggle(
+  label: string,
+  text: string,
+  onToggle: (active: boolean) => void
+): HTMLButtonElement {
+  const button = createFindButton(label, text);
+  button.classList.add("mw-find-toggle");
+  button.setAttribute("aria-pressed", "false");
+  button.addEventListener("click", () => {
+    const active = button.getAttribute("aria-pressed") !== "true";
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+    button.classList.toggle("is-active", active);
+    onToggle(active);
+  });
+  return button;
+}
+
 function toggleFindWidget(showReplace: boolean): void {
   if (findWidgetElements?.root.dataset.open === "true") {
     hideFindWidget();
@@ -1218,7 +1280,16 @@ function refreshSearchResults(): void {
   }
 
   const query = findWidgetElements.searchInput.value;
-  searchMatches = query ? collectSearchMatches(query) : [];
+  const regex = query ? buildSearchRegex(query) : undefined;
+  if (query && !regex) {
+    searchMatches = [];
+    activeSearchMatchIndex = -1;
+    findWidgetElements.count.textContent = "Invalid regex";
+    updateSearchDecorations();
+    return;
+  }
+
+  searchMatches = regex ? collectSearchMatches(regex) : [];
   if (searchMatches.length === 0) {
     activeSearchMatchIndex = -1;
     findWidgetElements.count.textContent = query ? "No results" : "";
@@ -1233,28 +1304,52 @@ function refreshSearchResults(): void {
   updateSearchDecorations();
 }
 
-function collectSearchMatches(query: string): SearchMatch[] {
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildSearchRegex(query: string): RegExp | undefined {
+  let pattern = searchOptions.regex ? query : escapeRegExp(query);
+  if (searchOptions.wholeWord) {
+    pattern = `\\b${pattern}\\b`;
+  }
+
+  const flags = searchOptions.matchCase ? "gu" : "giu";
+  try {
+    return new RegExp(pattern, flags);
+  } catch {
+    return undefined;
+  }
+}
+
+function collectSearchMatches(regex: RegExp): SearchMatch[] {
   const context = currentEditorContext;
   if (!context) {
     return [];
   }
 
   const view = context.get<EditorView>(milkdownCore.editorViewCtx);
-  const needle = query.toLocaleLowerCase();
   const matches: SearchMatch[] = [];
   view.state.doc.descendants((node, pos) => {
     if (!node.isText || !node.text) {
       return;
     }
 
-    const haystack = node.text.toLocaleLowerCase();
-    let offset = haystack.indexOf(needle);
-    while (offset >= 0) {
+    const text = node.text;
+    regex.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(text)) !== null) {
+      const matched = match[0];
       matches.push({
-        from: pos + offset,
-        to: pos + offset + query.length
+        from: pos + match.index,
+        to: pos + match.index + matched.length,
+        text: matched,
+        groups: match.slice(1).map(group => group ?? "")
       });
-      offset = haystack.indexOf(needle, offset + Math.max(1, query.length));
+      // Guard against zero-width matches looping forever.
+      if (matched.length === 0) {
+        regex.lastIndex += 1;
+      }
     }
   });
   return matches;
@@ -1297,8 +1392,8 @@ function replaceCurrentMatch(): void {
     return;
   }
 
-  const replacement = findWidgetElements.replaceInput.value;
   const match = searchMatches[activeSearchMatchIndex];
+  const replacement = computeReplacement(match);
   const view = currentEditorContext.get<EditorView>(milkdownCore.editorViewCtx);
   view.dispatch(view.state.tr.insertText(replacement, match.from, match.to).scrollIntoView());
   emitChangeSoon();
@@ -1316,16 +1411,66 @@ function replaceAllMatches(): void {
     return;
   }
 
-  const replacement = findWidgetElements.replaceInput.value;
   const view = currentEditorContext.get<EditorView>(milkdownCore.editorViewCtx);
   let tr = view.state.tr;
   for (let index = searchMatches.length - 1; index >= 0; index -= 1) {
     const match = searchMatches[index];
-    tr = tr.insertText(replacement, match.from, match.to);
+    tr = tr.insertText(computeReplacement(match), match.from, match.to);
   }
   view.dispatch(tr.scrollIntoView());
   emitChangeSoon();
   refreshSearchResults();
+}
+
+// Build the replacement string for a single match, expanding regex capture
+// references ($1, $&, $$) when regex mode is on and matching the source casing
+// when preserve-case is on.
+function computeReplacement(match: SearchMatch): string {
+  let result = findWidgetElements?.replaceInput.value ?? "";
+
+  if (searchOptions.regex) {
+    result = result.replace(/\$(\$|&|\d+)/g, (_whole, token: string) => {
+      if (token === "$") {
+        return "$";
+      }
+      if (token === "&") {
+        return match.text;
+      }
+      const index = Number(token);
+      if (index === 0) {
+        return match.text;
+      }
+      return match.groups[index - 1] ?? "";
+    });
+  }
+
+  if (searchOptions.preserveCase) {
+    result = applyCasePattern(match.text, result);
+  }
+
+  return result;
+}
+
+// Mirror the casing of the matched source onto the replacement: ALL CAPS,
+// all lowercase, or Capitalized leading letter. Otherwise leave it untouched.
+function applyCasePattern(source: string, replacement: string): string {
+  if (!source || !replacement) {
+    return replacement;
+  }
+
+  const hasLetters = source.toLowerCase() !== source.toUpperCase();
+  if (hasLetters && source === source.toUpperCase()) {
+    return replacement.toUpperCase();
+  }
+  if (source === source.toLowerCase()) {
+    return replacement.toLowerCase();
+  }
+
+  const first = source[0];
+  if (first === first.toUpperCase() && first !== first.toLowerCase()) {
+    return replacement[0].toUpperCase() + replacement.slice(1);
+  }
+  return replacement;
 }
 
 function printRenderedDocument(): void {
