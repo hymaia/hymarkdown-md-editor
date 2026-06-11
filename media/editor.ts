@@ -1245,9 +1245,17 @@ function selectSearchMatch(index: number): void {
     match.from,
     match.to
   );
-  view.dispatch(view.state.tr.setSelection(selection).scrollIntoView());
+  view.dispatch(view.state.tr.setSelection(selection));
   updateSearchDecorations();
+  scrollActiveMatchIntoView();
   findWidgetElements!.count.textContent = `${activeSearchMatchIndex + 1} of ${searchMatches.length}`;
+}
+
+function scrollActiveMatchIntoView(): void {
+  window.requestAnimationFrame(() => {
+    const active = editorRoot.querySelector<HTMLElement>(".mw-search-match-active");
+    active?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
 }
 
 function replaceCurrentMatch(): void {
