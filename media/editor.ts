@@ -747,7 +747,7 @@ function emitChangeNow(): void {
   }
 
   window.clearTimeout(emitTimer);
-  const markdown = normalizeMarkdown(editorMarkdownToFile(editor.getMarkdown()));
+  const markdown = normalizeMarkdown(unescapeBrackets(editorMarkdownToFile(editor.getMarkdown())));
   if (markdown === currentMarkdown) {
     setStatus("");
     return;
@@ -795,6 +795,60 @@ function fileMarkdownToEditor(markdown: string): string {
         : `${indent}![](${url})`;
     }
   );
+}
+
+// remark-stringify escapes every literal "[" (and "]" inside link labels) as
+// "\[" so plain text can never be mistaken for link syntax. In a WYSIWYG editor
+// that makes typing brackets impossible — they come back escaped. Real links and
+// images are emitted by Milkdown with bare, unescaped brackets, so a "\[" in the
+// output is always a literal bracket the user typed. We unescape those, keep the
+// escape when the bracket actually opens a link/image/reference (so meaning
+// round-trips), and never touch code spans or fenced code blocks.
+function unescapeBrackets(markdown: string): string {
+  const segments = markdown.split(/(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`)/g);
+  for (let i = 0; i < segments.length; i += 2) {
+    segments[i] = unescapeBracketsInText(segments[i]);
+  }
+  return segments.join("");
+}
+
+function unescapeBracketsInText(text: string): string {
+  let out = "";
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] === "\\" && (text[i + 1] === "[" || text[i + 1] === "]")) {
+      const bracket = text[i + 1];
+      if (bracket === "[" && opensLinkConstruct(text, i + 1)) {
+        out += "\\[";
+      } else {
+        out += bracket;
+      }
+      i += 1;
+      continue;
+    }
+    out += text[i];
+  }
+  return out;
+}
+
+// True if the "[" at index `open` begins a link/image/reference that would
+// re-parse as a link once its escape is removed: a matching "]" followed by
+// "(", "[", or ":".
+function opensLinkConstruct(text: string, open: number): boolean {
+  for (let i = open + 1; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch === "\\") {
+      i += 1;
+      continue;
+    }
+    if (ch === "]") {
+      const next = text[i + 1];
+      return next === "(" || next === "[" || next === ":";
+    }
+    if (ch === "\n") {
+      return false;
+    }
+  }
+  return false;
 }
 
 function setStatus(message: string): void {
