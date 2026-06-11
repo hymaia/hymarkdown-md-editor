@@ -2,6 +2,8 @@
 
 **Notion-like editing for Markdown files.** Write visually with rich formatting, live preview, and structured editing—then save as plain Markdown. No lock-in, no proprietary formats, everything stays on your filesystem.
 
+<br />
+
 ![1.00](preview.gif)
 
 ## Features
