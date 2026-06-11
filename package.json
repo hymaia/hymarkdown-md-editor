@@ -2,7 +2,7 @@
   "name": "hymarkdown",
   "displayName": "Hymarkdown",
   "description": "Rich-text WYSIWYG editor for Markdown files — write visually, save as plain Markdown.",
-  "version": "0.0.2",
+  "version": "0.2.0",
   "publisher": "local",
   "license": "MIT",
   "repository": {
