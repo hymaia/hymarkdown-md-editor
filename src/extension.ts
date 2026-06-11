@@ -336,9 +336,15 @@ class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
     });
   </script>
 </head>
-<body>
+<body class="mw-print">
   <div id="root">
+    <div class="editor">
+      <div class="milkdown">
+        <div class="ProseMirror">
 ${contentHtml}
+        </div>
+      </div>
+    </div>
   </div>
 </body>
 </html>`;

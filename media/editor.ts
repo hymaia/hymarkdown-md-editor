@@ -4,6 +4,7 @@ import "@milkdown/crepe/theme/frame.css";
 import * as codeBlockModule from "@milkdown/components/code-block";
 import * as coreModule from "@milkdown/core";
 import { Plugin, PluginKey, TextSelection } from "@milkdown/kit/prose/state";
+import { DOMSerializer } from "@milkdown/kit/prose/model";
 import { Decoration, DecorationSet } from "@milkdown/kit/prose/view";
 import * as commonmarkModule from "@milkdown/preset-commonmark";
 import mermaid from "mermaid";
@@ -141,9 +142,11 @@ type EditorDoc = {
   content: {
     size: number;
   };
+  type: { schema: ProseSchema };
   resolve(pos: number): ListSelection;
   descendants(callback: (node: ProseMirrorNode, pos: number) => boolean | void): void;
 };
+type ProseSchema = Parameters<typeof DOMSerializer.fromSchema>[0];
 type ProseMirrorNode = {
   isText?: boolean;
   text?: string;
@@ -1273,10 +1276,12 @@ function replaceAllMatches(): void {
 
 function printRenderedDocument(): void {
   emitChangeNow();
-  vscode.postMessage({
-    type: "print",
-    contentHtml: createPrintableContentHtml()
-  } satisfies OutgoingMessage);
+  void buildPrintContentHtml().then(contentHtml => {
+    vscode.postMessage({
+      type: "print",
+      contentHtml
+    } satisfies OutgoingMessage);
+  });
 }
 
 function updateSearchDecorations(): void {
@@ -1293,9 +1298,89 @@ function updateSearchDecorations(): void {
   );
 }
 
-function createPrintableContentHtml(): string {
-  const editorElement = editorRoot.querySelector<HTMLElement>(".editor") ?? editorRoot;
-  return editorElement.outerHTML;
+// Build a clean, self-contained HTML rendering of the document for printing.
+// We serialize the ProseMirror *document model* (via the schema's toDOM specs)
+// rather than scraping the contenteditable DOM, so the output carries no editor
+// chrome, no CodeMirror gutters, and no doubled list markers. Mermaid fences are
+// rendered to inline SVG and images are inlined as data URLs so the printed page
+// stands alone outside the webview.
+async function buildPrintContentHtml(): Promise<string> {
+  if (!currentEditorContext) {
+    return "";
+  }
+
+  const view = currentEditorContext.get<EditorView>(milkdownCore.editorViewCtx);
+  const { doc } = view.state;
+  const serializer = DOMSerializer.fromSchema(doc.type.schema);
+  const fragment = serializer.serializeFragment(doc.content as never);
+  const container = document.createElement("div");
+  container.appendChild(fragment);
+
+  await renderPrintMermaidBlocks(container);
+  await inlinePrintImages(container);
+
+  return container.innerHTML;
+}
+
+async function renderPrintMermaidBlocks(container: HTMLElement): Promise<void> {
+  const preBlocks = Array.from(container.querySelectorAll<HTMLElement>("pre"));
+  await Promise.all(
+    preBlocks.map(async pre => {
+      const language = (pre.dataset.language ?? "").trim().toLowerCase();
+      const source = pre.textContent ?? "";
+      if (language !== "mermaid" || source.trim().length === 0) {
+        return;
+      }
+
+      try {
+        const { svg } = await mermaid.render(`mermaid-print-${mermaidRenderId++}`, source);
+        const figure = document.createElement("div");
+        figure.className = "mermaid-print";
+        figure.innerHTML = svg;
+        pre.replaceWith(figure);
+      } catch {
+        // Leave the original code block in place when rendering fails.
+      }
+    })
+  );
+}
+
+async function inlinePrintImages(container: HTMLElement): Promise<void> {
+  const images = Array.from(container.querySelectorAll("img"));
+  await Promise.all(
+    images.map(async image => {
+      const original = image.getAttribute("src");
+      if (!original) {
+        return;
+      }
+
+      try {
+        const resolved = await resolveDomUrl(original);
+        image.src = await fetchAsDataUrl(resolved);
+      } catch {
+        // Keep the original src when the image cannot be inlined.
+      }
+    })
+  );
+}
+
+async function fetchAsDataUrl(url: string): Promise<string> {
+  if (url.startsWith("data:")) {
+    return url;
+  }
+
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () =>
+      typeof reader.result === "string"
+        ? resolve(reader.result)
+        : reject(new Error("Failed to read image as data URL."))
+    );
+    reader.addEventListener("error", () => reject(reader.error ?? new Error("Image fetch failed.")));
+    reader.readAsDataURL(blob);
+  });
 }
 
 function focusEditor(): void {

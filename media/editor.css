@@ -821,6 +821,86 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
   }
 }
 
+/* Styles for the standalone print page (body.mw-print). The print HTML is the
+   ProseMirror document serialized to plain semantic tags, so it needs list,
+   code-block and image rules that the editor renders via custom node views. */
+.mw-print .ProseMirror p {
+  margin-bottom: 0.35em;
+}
+
+.mw-print .ProseMirror ul,
+.mw-print .ProseMirror ol {
+  padding-left: 1.6em;
+  margin: 0.3em 0;
+}
+
+.mw-print .ProseMirror li {
+  margin: 0.1em 0;
+}
+
+.mw-print .ProseMirror li > p {
+  margin: 0;
+}
+
+.mw-print .ProseMirror h1 {
+  font-size: 33.6px;
+}
+
+.mw-print .ProseMirror h2 {
+  font-size: 28.8px;
+}
+
+.mw-print .ProseMirror h3 {
+  font-size: 25.6px;
+}
+
+.mw-print .ProseMirror h4 {
+  font-size: 22.4px;
+}
+
+.mw-print .ProseMirror h5 {
+  font-size: 19.2px;
+}
+
+.mw-print .ProseMirror h6 {
+  font-size: 14.4px;
+}
+
+.mw-print .ProseMirror ul[data-item-type="task"],
+.mw-print .ProseMirror li[data-checked] {
+  list-style: none;
+}
+
+.mw-print .ProseMirror pre {
+  padding: 12px 16px;
+  border-radius: var(--mw-radius);
+  background: var(--mw-code-bg);
+  color: var(--mw-code-fg);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mw-print .ProseMirror pre code {
+  padding: 0;
+  background: transparent;
+  font-family: var(--mw-mono-font-family);
+}
+
+.mw-print .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+}
+
+.mw-print .mermaid-print {
+  margin: 1em 0;
+}
+
+.mw-print .mermaid-print svg {
+  max-width: 100%;
+  height: auto;
+}
+
 @media print {
   :root {
     --mw-content-width: 1000px;
