@@ -901,6 +901,17 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
   height: auto;
 }
 
+/* Drop the browser-injected page URL/date header and footer by zeroing the
+   page margin; content breathing room comes from padding on the print body. */
+@page {
+  margin: 0;
+}
+
+.mw-print #root {
+  padding: 48px 56px;
+  box-sizing: border-box;
+}
+
 @media print {
   :root {
     --mw-content-width: 1000px;
