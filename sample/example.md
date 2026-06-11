@@ -52,11 +52,11 @@ This line should appear directly below the previous one.
 
 ## GitHub Task Lists
 
-* Render checked tasks
-
 * Render unchecked tasks
 
-* Preserve task list markdown when possible
+- Render checked tasks
+
+- Preserve task list markdown when possible
 
 #### qddqsdqjk
 
