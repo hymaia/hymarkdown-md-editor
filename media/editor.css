@@ -802,6 +802,23 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
   height: auto;
 }
 
+/* Mermaid renders node/edge labels as HTML <p> inside <foreignObject>, and
+   those paragraphs sit inside .ProseMirror. So the editor paragraph rules
+   (line-height: 1.7 in the preview, margin-bottom in print) leak in, inflating
+   the label box and shifting its text off-center. Reset to mermaid's own
+   metrics (line-height: normal, no margin). The two-class + two-element
+   selectors outrank .milkdown/.mw-print .ProseMirror p, which would otherwise
+   win the cascade on the inner <p>. */
+.milkdown .mermaid-preview .nodeLabel,
+.milkdown .mermaid-preview .edgeLabel,
+.milkdown .mermaid-preview foreignObject p,
+.mw-print .mermaid-print .nodeLabel,
+.mw-print .mermaid-print .edgeLabel,
+.mw-print .mermaid-print foreignObject p {
+  line-height: normal;
+  margin: 0;
+}
+
 @media (max-width: 1100px) {
   :root {
     --mw-content-padding-x: 64px;
