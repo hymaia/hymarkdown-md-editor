@@ -304,12 +304,13 @@ class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
 
     const baseName = sanitizeFileName(path.basename(document.uri.fsPath || "document.md", path.extname(document.uri.fsPath))) || "document";
     const targetUri = vscode.Uri.joinPath(printDir, `${baseName}-${Date.now()}.html`);
-    const html = this.getPrintHtml(document.uri, contentHtml);
+    const printTitle = path.basename(document.uri.fsPath || "document.md", path.extname(document.uri.fsPath)) || "document";
+    const html = this.getPrintHtml(document.uri, contentHtml, printTitle);
     await vscode.workspace.fs.writeFile(targetUri, Buffer.from(html, "utf8"));
     await vscode.env.openExternal(targetUri);
   }
 
-  private getPrintHtml(documentUri: vscode.Uri, contentHtml: string): string {
+  private getPrintHtml(documentUri: vscode.Uri, contentHtml: string, title: string): string {
     const distStyleUri = vscode.Uri.joinPath(this.context.extensionUri, "dist", "editor.css");
     const editorStyleUri = vscode.Uri.joinPath(this.context.extensionUri, "media", "editor.css");
     const katexStyleUri = vscode.Uri.joinPath(this.context.extensionUri, "media", "katex", "katex.min.css");
@@ -329,7 +330,7 @@ class MarkdownWysiwygProvider implements vscode.CustomTextEditorProvider {
   <link href="${escapeHtml(distStyleUri.toString())}" rel="stylesheet">
   <link href="${escapeHtml(editorStyleUri.toString())}" rel="stylesheet">
   <style>:root { --mw-base-font-size: ${baseFontSize}px; }</style>${themeLink}
-  <title>Print Markdown</title>
+  <title>${escapeHtml(title)}</title>
   <script>
     window.addEventListener("load", () => {
       window.setTimeout(() => window.print(), 250);
