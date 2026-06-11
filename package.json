@@ -65,12 +65,6 @@
         "key": "ctrl+alt+f",
         "mac": "cmd+alt+f",
         "when": "activeCustomEditorId == markdownWysiwyg.editor"
-      },
-      {
-        "command": "markdownWysiwyg.print",
-        "key": "ctrl+p",
-        "mac": "cmd+p",
-        "when": "activeCustomEditorId == markdownWysiwyg.editor"
       }
     ],
     "configuration": {

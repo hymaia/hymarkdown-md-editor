@@ -473,13 +473,6 @@ window.addEventListener("keydown", event => {
     event.preventDefault();
     event.stopPropagation();
     toggleFindWidget(event.altKey);
-    return;
-  }
-
-  if (event.key.toLowerCase() === "p" && !event.shiftKey) {
-    event.preventDefault();
-    event.stopPropagation();
-    printRenderedDocument();
   }
 }, true);
 
