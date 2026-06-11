@@ -901,14 +901,15 @@ body[data-mw-selecting-text="true"] .milkdown .milkdown-block-handle {
   height: auto;
 }
 
-/* Drop the browser-injected page URL/date header and footer by zeroing the
-   page margin; content breathing room comes from padding on the print body. */
+/* Standard per-page margins on all four sides of every printed page. Whether
+   the browser prints its URL/date header and footer in this margin is governed
+   by the print dialog's "Headers and footers" option. */
 @page {
-  margin: 0;
+  margin: 18mm 16mm;
 }
 
 .mw-print #root {
-  padding: 48px 56px;
+  padding: 0;
   box-sizing: border-box;
 }
 
